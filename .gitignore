@@ -1,0 +1,15 @@
+# Fichiers produits (à publier dans les « Releases » GitHub, pas dans le dépôt)
+dist/
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+
+# Données locales du classement
+donnees/
+*.db
+
+# Systèmes
+.DS_Store
+Thumbs.db

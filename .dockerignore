@@ -1,0 +1,8 @@
+.git
+captures/
+dist/
+*.md
+construire.py
+.gitignore
+.dockerignore
+__pycache__/

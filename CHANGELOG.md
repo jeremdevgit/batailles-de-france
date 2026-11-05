@@ -1,0 +1,24 @@
+# Historique des versions
+
+## 2026-11-05 — Publication open source
+
+- Écran d'accueil : « Créé par jeremdevgit » et liens vers les autres logiciels de l'auteur.
+- Code publié sous licence GNU GPL v3 ou ultérieure.
+- Sécurité : le texte venant des autres joueurs (carte de l'hôte, commandes, carte importée dans l'éditeur, cartes enregistrées) est neutralisé avant tout affichage ; le pseudo du classement est aussi nettoyé côté serveur.
+- Sécurité : l'adresse réelle des joueurs n'est acceptée que des proxys déclarés (`FORWARDED_ALLOW_IPS`) ; requêtes trop volumineuses refusées avant lecture ; liste anti-abus purgée régulièrement ; en-têtes de sécurité (CSP stricte, anti-iframe, nosniff) envoyés par le serveur.
+- Polices embarquées : plus aucune requête vers un service tiers.
+- Version hors ligne reconstructible avec `construire.py`, script autorisé par son empreinte SHA-256.
+- Réglages par variables d'environnement, image Docker et `docker-compose.yml` génériques.
+
+## Batailles de France — 2026-10-27
+
+- Le jeu s'étend à 5 villes : Lyon, Paris, Marseille, Bordeaux et Strasbourg.
+- Nouveau mode classé : recherche automatique d'un adversaire, rangs de Recrue à Maréchal et classement des joueurs.
+- Parties en ligne à 2 contre 2, avec votes pour la vitesse et la pause.
+- Interface repensée pour téléphone et tablette.
+- Version hors ligne à télécharger.
+
+## Première version (nom d'origine : Bataille de Lyon) — 2026-10-18
+
+- Mise en ligne du jeu, ouvert à tous sans compte.
+- Parties en ligne entre amis grâce à un code à 5 caractères.

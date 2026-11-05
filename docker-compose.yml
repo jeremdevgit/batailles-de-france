@@ -1,0 +1,33 @@
+# Batailles de France — exemple de déploiement.
+# Le serveur n'écoute que sur la machine (127.0.0.1:8000) : place devant un proxy HTTPS (Caddy, nginx, Traefik…)
+# qui transmet les WebSockets. Voir README.md, section « Héberger le jeu en ligne ».
+services:
+  batailles-de-france:
+    build: .
+    image: batailles-de-france:latest
+    container_name: batailles-de-france
+    restart: unless-stopped
+    environment:
+      # Réseau(x) d'où viennent les connexions du proxy, seul autorisé à transmettre l'IP réelle des joueurs
+      # (X-Forwarded-For). Proxy sur la machine : il arrive par la passerelle du réseau Docker (plage privée
+      # 172.16.0.0/12 par défaut) ; proxy dans un conteneur : mets l'adresse ou le réseau de ce conteneur.
+      # Ne jamais mettre « * » : un joueur pourrait alors usurper une adresse et contourner les limites.
+      - FORWARDED_ALLOW_IPS=172.16.0.0/12
+    ports:
+      - "127.0.0.1:8000:8000"
+    volumes:
+      - donnees:/donnees            # classement du mode classé (SQLite)
+    read_only: true
+    tmpfs:
+      - /tmp
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+
+volumes:
+  donnees:
