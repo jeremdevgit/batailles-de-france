@@ -1,3 +1,36 @@
+# Security
+
+**English** · [Français](#sécurité)
+
+## Reporting a vulnerability
+
+Please **do not** open a public issue for a security flaw.
+Use GitHub's private reporting: the repository's **Security** tab → **Report a vulnerability**.
+Describe the problem, the steps to reproduce it and, if possible, a suggested fix.
+The fix will ship in a new release, crediting you if you agree.
+
+## Supported versions
+
+Only the latest release receives fixes.
+
+## Scope
+
+The game server (`app/main.py`), the client (`app/static/`), the Docker image and the offline version.
+
+## Known limitations (by design)
+
+- The leaderboard relies on results reported by browsers; the server only checks they are plausible (one game at a time, at most 100 points difference). A player who modifies their client can cheat on their own ranking.
+- In an online game, the host's computer simulates the game and is authoritative for guests.
+- Online games are not end-to-end encrypted: confidentiality relies on the HTTPS of the proxy in front of the server.
+
+## Hosting recommendations
+
+- Always serve the game over HTTPS, behind a proxy that forwards WebSockets.
+- Never set `FORWARDED_ALLOW_IPS` to `*` if the server port can be reached without going through the proxy.
+- Keep the image up to date: `docker compose build --pull && docker compose up -d`.
+
+---
+
 # Sécurité
 
 ## Signaler une vulnérabilité

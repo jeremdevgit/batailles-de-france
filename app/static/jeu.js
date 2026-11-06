@@ -1,6 +1,15 @@
 /* SPDX-License-Identifier: GPL-3.0-or-later — Copyright (C) 2026 jeremdevgit — voir LICENSE */
 (()=>{
 'use strict';
+/* ================= Langues ================= */
+// trad(), LANG et LOCALE viennent de langue.js. Les messages partagés en ligne (journal, bannières, fin de partie)
+// voyagent en français sous forme de modèle {k, v} : chaque joueur les lit dans sa propre langue grâce à tx().
+const MSG=(k,v)=>({k,v});
+function tx(m,d){d=d|0;if(m==null)return'';if(typeof m!=='object')return trad(String(m));if(d>3||typeof m.k!=='string')return'';
+  const v={};if(m.v&&typeof m.v==='object')for(const k of Object.keys(m.v).slice(0,12))v[k]=tx(m.v[k],d+1);return trad(m.k,v);}
+// Message reçu d'un autre joueur : texte ou modèle, taille bornée
+function okMsg(m,d){d=d|0;if(m==null)return'';if(typeof m!=='object')return String(m).slice(0,400);if(d>3||typeof m.k!=='string')return'';
+  const v={};if(m.v&&typeof m.v==='object')for(const k of Object.keys(m.v).slice(0,12))v[String(k).slice(0,20)]=okMsg(m.v[k],d+1);return{k:m.k.slice(0,400),v};}
 /* ================= Cartes (1 unité ≈ 4 m) ================= */
 const W=1600,H=1100;
 /*MAPS*/
@@ -316,7 +325,8 @@ const OC={A:C.atk,B:C.def,N:C.neu,X:'#555b63'};
 const hexRGB=h=>{h=h.replace('#','');return[parseInt(h.slice(0,2),16),parseInt(h.slice(2,4),16),parseInt(h.slice(4,6),16)];};
 const RGB={A:hexRGB(C.atk),B:hexRGB(C.def),N:hexRGB(C.neu)};
 const FD="'Saira Condensed','Arial Narrow',sans-serif",FB="'Barlow','Segoe UI',sans-serif";
-const fr=(v,d=1)=>v.toFixed(d).replace('.',',');
+const DEC=new Intl.NumberFormat(LOCALE).format(1.5).charAt(1);
+const fr=(v,d=1)=>v.toFixed(d).replace('.',DEC);
 
 /* ================= Territoire ================= */
 const CS=6,GW=Math.ceil(W/CS),GH=Math.ceil(H/CS);
@@ -399,15 +409,15 @@ function buildBg(){
   for(const[t,x,y,a,st]of D.labels||[]){g.save();g.translate(x,y);g.rotate(a||0);
     if(st==='r'){g.font=`700 13px ${FD}`;g.fillStyle='rgba(150,205,220,0.75)';if('letterSpacing'in g)g.letterSpacing='6px';}
     else{g.font=`800 22px ${FD}`;g.fillStyle=st==='A'?'rgba(226,104,63,0.3)':st==='B'?'rgba(78,149,220,0.3)':'rgba(216,180,95,0.3)';if('letterSpacing'in g)g.letterSpacing='8px';}
-    g.fillText(t,0,1);g.restore();}
+    g.fillText(trad(t),0,1);g.restore();}
   if('letterSpacing'in g)g.letterSpacing='0px';
   g.fillStyle='rgba(216,180,95,0.42)';
   for(let k=0;k<GW*GH;k++){const ni=cellNode[k];if(ni<0)continue;const a=nodes[ni].arr,x=k%GW,y=(k/GW)|0;
     if(x+1<GW){const nj=cellNode[k+1];if(nj>=0&&nodes[nj].arr!==a&&comp[k+1]===comp[k]&&((x+y)&1))g.fillRect((x+1)*CS-1,y*CS,2,CS);}
     if(y+1<GH){const nj=cellNode[k+GW];if(nj>=0&&nodes[nj].arr!==a&&comp[k+GW]===comp[k]&&((x+y)&1))g.fillRect(x*CS,(y+1)*CS-1,CS,2);}}
   g.textAlign='center';g.textBaseline='middle';
-  for(const a of ARR){if(a.lx==null)continue;g.font=`800 19px ${FD}`;if('letterSpacing'in g)g.letterSpacing='3px';g.fillStyle='rgba(216,180,95,0.38)';g.fillText(a.n.toUpperCase(),a.lx,a.ly);
-    g.font=`600 11px ${FB}`;if('letterSpacing'in g)g.letterSpacing='1px';g.fillStyle='rgba(216,180,95,0.32)';g.fillText(a.sub,a.lx,a.ly+15);}
+  for(const a of ARR){if(a.lx==null)continue;g.font=`800 19px ${FD}`;if('letterSpacing'in g)g.letterSpacing='3px';g.fillStyle='rgba(216,180,95,0.38)';g.fillText(trad(a.n).toUpperCase(),a.lx,a.ly);
+    g.font=`600 11px ${FB}`;if('letterSpacing'in g)g.letterSpacing='1px';g.fillStyle='rgba(216,180,95,0.32)';g.fillText(trad(a.sub),a.lx,a.ly+15);}
   if('letterSpacing'in g)g.letterSpacing='0px';
   g.save();g.translate(1545,180);g.fillStyle='rgba(232,227,216,0.5)';g.beginPath();g.moveTo(0,-22);g.lineTo(6,6);g.lineTo(0,1);g.lineTo(-6,6);g.closePath();g.fill();g.font=`700 13px ${FD}`;g.textAlign='center';g.fillText('N',0,-34);g.restore();
   g.save();g.translate(40,1040);g.strokeStyle='rgba(232,227,216,0.55)';g.lineWidth=1.5;g.beginPath();g.moveTo(0,-5);g.lineTo(0,0);g.lineTo(125,0);g.lineTo(125,-5);g.moveTo(62.5,0);g.lineTo(62.5,-3);g.stroke();
@@ -464,7 +474,7 @@ let wallCache={A:false,B:false},stretchF={A:1,B:1},army={A:0,B:0},arrOwn=ARR.map
 const arrSum=(s,k)=>{let v=0;ARR.forEach((a,i)=>{if(arrOwn[i]===s&&a.b[k])v+=a.b[k];});return v;};
 const upkMult=s=>{let m=P[s].perk.upkeep;ARR.forEach((a,i)=>{if(arrOwn[i]===s&&a.b.upk)m*=a.b.upk;});return m;};
 function updArr(){ARR.forEach((ar,i)=>{const o=nodes[ar.ix[0]].owner;const w=(o==='A'||o==='B')&&ar.ix.every(k=>nodes[k].alive&&nodes[k].owner===o)?o:null;
-    if(w!==arrOwn[i]&&!SIM.on&&state==='play'&&NET.role!=='guest'){if(w)log(`Les ${sideName(w,1)} tiennent tout l'arrondissement ${ar.n} : ${ar.d}`,w);else if(arrOwn[i])log(`Les ${sideName(arrOwn[i],1)} perdent le bonus ${ar.n}`,arrOwn[i]);}arrOwn[i]=w;});}
+    if(w!==arrOwn[i]&&!SIM.on&&state==='play'&&NET.role!=='guest'){if(w)log(MSG("Les {camp} tiennent tout l'arrondissement {arr} : {bonus}",{camp:sideName(w,1),arr:ar.n,bonus:ar.d}),w);else if(arrOwn[i])log(MSG('Les {camp} perdent le bonus {arr}',{camp:sideName(arrOwn[i],1),arr:ar.n}),arrOwn[i]);}arrOwn[i]=w;});}
 function updWall(){updArr();let a=0,b=0;for(const n of nodes){if(!n.alive)continue;if(n.owner==='A')a++;else if(n.owner==='B')b++;}
   wallCache={A:a<HOMECOUNT.A*BAL.wall,B:b<HOMECOUNT.B*BAL.wall};
   stretchF={A:1/(1+BAL.stretch*Math.max(0,a-BAL.stretchFrom)),B:1/(1+BAL.stretch*Math.max(0,b-BAL.stretchFrom))};}
@@ -563,7 +573,7 @@ function sendSelection(target){
 function doSend(side,from,ti,r,sec){
   const target=nodes[ti];if(!target||!target.alive)return 0;
   if(time<BAL.prep||mode==='local'){let k=0;for(const i of from){const s=nodes[i];if(s===target||!canCmd(side,sec,s))continue;planned=planned.filter(p=>p.from!==i);planned.push({s:side,from:i,to:ti,ratio:r,sec:sec||0});k++;}
-    if(k)log(`Attaque planifiée : ${k} point${k>1?'s':''} vers ${target.name} (${Math.round(r*100)} %), ${time<BAL.prep?'lancée à la fin de la préparation':'lancée au début de la manche'}`,side,ti,side);return 0;}
+    if(k)log(MSG(k>1?'Attaque planifiée : {n} points vers {cible} ({pct} %), {quand}':'Attaque planifiée : {n} point vers {cible} ({pct} %), {quand}',{n:k,cible:target.name,pct:Math.round(r*100),quand:time<BAL.prep?'lancée à la fin de la préparation':'lancée au début de la manche'}),side,ti,side);return 0;}
   if(truce>0){log('Cessez-le-feu : aucun envoi possible','X',undefined,side);return 0;}
   let sent=0;
   for(const i of from){const s=nodes[i];if(s===target||!canCmd(side,sec,s))continue;const amt=Math.floor(s.troops*r);if(amt<1)continue;const p=path(s.i,target.i);if(dispatch(s,p,amt,sec))sent+=amt;}
@@ -571,11 +581,11 @@ function doSend(side,from,ti,r,sec){
 }
 function setRally(target){const from=[...sel].filter(i=>myCmd(nodes[i])&&i!==target.i);if(!from.length)return;act('rally',{f:from,t:target.i});tutFlag.rally=true;}
 function doRally(side,from,ti,sec){const target=nodes[ti];if(!target||!target.alive)return false;let k=0;for(const i of from){const n=nodes[i];if(!canCmd(side,sec,n)||n===target)continue;n.rally=ti;k++;}
-  if(k)log(`Route permanente : ${k} point${k>1?'s':''} vers ${target.name}`,side,ti,side);return k>0;}
+  if(k)log(MSG(k>1?'Route permanente : {n} points vers {cible}':'Route permanente : {n} point vers {cible}',{n:k,cible:target.name}),side,ti,side);return k>0;}
 function clearRally(){act('unrally',{f:sel.size?[...sel]:null});}
 function doUnrally(side,from,sec){let k=0;const list=(from?from.map(i=>nodes[i]):nodes).filter(n=>canCmd(side,sec,n));
   for(const n of list){if(n.rally>=0){n.rally=-1;k++;}const b=planned.length;planned=planned.filter(p=>!(p.from===n.i&&p.s===side));k+=b-planned.length;}
-  if(k)log(`${k} route${k>1?'s':''} arrêtée${k>1?'s':''}`,side,undefined,side);return k>0;}
+  if(k)log(MSG(k>1?'{n} routes arrêtées':'{n} route arrêtée',{n:k}),side,undefined,side);return k>0;}
 /* ---------- Ordres : un seul point d'entrée (local, hôte ou invité en ligne) ---------- */
 function act(kind,a){if(isLocked())return false;if(NET.role==='guest'){netCmd(kind,a||{});return true;}return applyAct(player,kind,a||{},mySec,mySeat());}
 function applyAct(side,kind,a,sec,seat){
@@ -587,7 +597,7 @@ function applyAct(side,kind,a,sec,seat){
     case 'rally':return nd(a.t)?doRally(side,list(a.f),a.t,sec):false;
     case 'unrally':return doUnrally(side,a.f==null?null:list(a.f),sec);
     case 'build':{const n=nd(a.n);return n&&own(ST,a.k)&&canCmd(side,sec,n)?doBuild(side,n,a.k):false;}
-    case 'cede':{const n=nd(a.n);if(!TEAM||!n||!sec||!canCmd(side,sec,n)||secOf(n)!==sec)return false;n.sec=3-sec;n.secOwner=n.owner;n.rally=-1;planned=planned.filter(p=>p.from!==n.i);log(`${n.name} confié au secteur ${SECN[side][3-sec]}`,side,n.i,side);return true;}
+    case 'cede':{const n=nd(a.n);if(!TEAM||!n||!sec||!canCmd(side,sec,n)||secOf(n)!==sec)return false;n.sec=3-sec;n.secOwner=n.owner;n.rally=-1;planned=planned.filter(p=>p.from!==n.i);log(MSG('{nom} confié au secteur {secteur}',{nom:n.name,secteur:SECN[side][3-sec]}),side,n.i,side);return true;}
     case 'res':return own(TECH,a.k)?startResearch(side,a.k):false;
     case 'unlock':return Number.isInteger(a.i)&&ABL[side][a.i]?unlockAbility(side,a.i):false;
     case 'ab':return Number.isInteger(a.i)&&ABL[side][a.i]?useAbility(side,a.i,nd(a.n)):false;
@@ -595,7 +605,7 @@ function applyAct(side,kind,a,sec,seat){
     case 'rebuild':return startRebuild(side,nd(a.n));
     case 'dec':{const dp=decP[side];if(!dp||!dp.ids.includes(a.id))return false;const d=DECS[side].find(x=>x.id===a.id);if(!d)return false;takeDecision(side,d);decP[side]=null;return true;}
     case 'decskip':decP[side]=null;return true;
-    case 'offer':{const of=offerS[side];if(!of)return false;const o=OFFERS[of.key];if(P[side].cr<o.cost)return false;P[side].cr-=o.cost;o.apply(side);log(`Offre acceptée : ${of.key==='marchand'?'armes du marchand':'ingénieurs'}`,side,undefined,side);offerS[side]=null;return true;}
+    case 'offer':{const of=offerS[side];if(!of)return false;const o=OFFERS[of.key];if(P[side].cr<o.cost)return false;P[side].cr-=o.cost;o.apply(side);log(MSG('Offre acceptée : {offre}',{offre:of.key==='marchand'?'armes du marchand':'ingénieurs'}),side,undefined,side);offerS[side]=null;return true;}
     case 'auto':{if(isMulti()||!['off','def','atk'].includes(a.m))return false;autoM[side]=a.m;log(a.m==='off'?'Mode manuel':a.m==='def'?'Défense automatique : vos points tiennent le front':'Attaque automatique : vos points attaquent les cibles faibles',side,undefined,side);return true;}
     case 'autob':if(isMulti())return false;autoB[side]=!!a.v;log(a.v?'Améliorations automatiques activées':'Améliorations manuelles',side,undefined,side);return true;
     case 'vote':return voteStart(seat,a);
@@ -606,7 +616,7 @@ function applyAct(side,kind,a,sec,seat){
 
 function floatAt(n,txt,col){if(SIM.on)return;if(NET.role==='host')netEv(['f',n.i,txt,col,'']);pushFloat(n.i,txt,col);}
 function prodFloat(n,txt,col){if(NET.role==='host'&&NET.rs.has(n.owner))netEv(['f',n.i,txt,col,n.owner]);if(NET.role!=='host'||n.owner===player)pushFloat(n.i,txt,col);}
-function pushFloat(i,txt,col){floaters.push({n:i,txt,col,t:0,dur:2.2});if(floaters.length>60)floaters.shift();}
+function pushFloat(i,txt,col){floaters.push({n:i,txt:tx(txt),col,t:0,dur:2.2});if(floaters.length>60)floaters.shift();}
 /* ---------- Journal ---------- */
 const feedEl=document.getElementById('feed');
 function log(msg,cls,node,aud){if(SIM.on)return;
@@ -614,8 +624,8 @@ function log(msg,cls,node,aud){if(SIM.on)return;
   pushFeed(msg,cls,node,aud);}
 function pushFeed(msg,cls,node,side){const it={msg,cls,t:time,node:node==null||node<0?undefined:node};for(const s of side==='A'||side==='B'?[side]:['A','B']){feeds[s].unshift(it);if(feeds[s].length>6)feeds[s].pop();}renderFeed();}
 function renderFeed(){feedEl.innerHTML='';for(const f of(feeds[player]||feeds.A)){let d;
-  if(f.node!=null){d=document.createElement('button');d.textContent=f.msg;const sm=document.createElement('small');sm.textContent='Voir';d.appendChild(sm);d.onclick=()=>centerOn(nodes[f.node]);}
-  else{d=document.createElement('div');d.textContent=f.msg;}
+  if(f.node!=null){d=document.createElement('button');d.textContent=tx(f.msg);const sm=document.createElement('small');sm.textContent=trad('Voir');d.appendChild(sm);d.onclick=()=>centerOn(nodes[f.node]);}
+  else{d=document.createElement('div');d.textContent=tx(f.msg);}
   d.className=f.cls;feedEl.appendChild(d);}}
 
 /* ---------- Combat ---------- */
@@ -626,8 +636,8 @@ function capture(n,prev,by){
   if(isObj(n)){P[by].objCaps++;if(P[by].pcCaps<BAL.pcCapMax){P[by].pc++;P[by].pcCaps++;}}
   effects.push({type:'ring',x:n.x,y:n.y,t:0,c:OC[by]});
   if(prev===player&&sel.has(n.i))sel.delete(n.i);
-  if(isObj(n)||n.type!=='dist'||prev!=='N'||n.st)log(`${n.name} ${prev==='N'?'pris':'arraché'} par les ${sideName(by,1)}`,by,isObj(n)?n.i:undefined);
-  if(n.type==='base'&&n.home!==by)endGame(by,`Le QG adverse (${n.name}) est tombé.`,'qg');
+  if(isObj(n)||n.type!=='dist'||prev!=='N'||n.st)log(MSG(prev==='N'?'{nom} pris par les {camp}':'{nom} arraché par les {camp}',{nom:n.name,camp:sideName(by,1)}),by,isObj(n)?n.i:undefined);
+  if(n.type==='base'&&n.home!==by)endGame(by,MSG('Le QG adverse ({nom}) est tombé.',{nom:n.name}),'qg');
 }
 function arrive(s,n){
   if(!n.alive){P[s.owner].lost+=s.n;return;}
@@ -664,21 +674,21 @@ function startResearch(s,k){
 }
 const rbCost=s=>Math.round(BAL.rebuildCost*P[s].perk.rebuild),rbTime=s=>Math.round(BAL.rebuildT*P[s].perk.rebuild);
 function canRebuild(s,n){return n&&!n.alive&&n.type==='bridge'&&!n.rebuild&&EDADJ[n.i].some(j=>nodes[j].alive&&nodes[j].owner===s)&&P[s].cr>=rbCost(s);}
-function startRebuild(s,n){if(!canRebuild(s,n))return false;const c=rbCost(s);P[s].cr-=c;P[s].spent+=c;n.rebuild={s,t:rbTime(s),T:rbTime(s)};log(`Reconstruction du ${n.name} lancée par les ${sideName(s,1)}`,s,n.i);return true;}
+function startRebuild(s,n){if(!canRebuild(s,n))return false;const c=rbCost(s);P[s].cr-=c;P[s].spent+=c;n.rebuild={s,t:rbTime(s),T:rbTime(s)};log(MSG('Reconstruction du {nom} lancée par les {camp}',{nom:n.name,camp:sideName(s,1)}),s,n.i);return true;}
 
 /* ---------- Capacités ---------- */
 function abBlock(side,i){
   const a=ABL[side][i];
-  if(time<BAL.prep)return 'Après la préparation';
-  if(a.key==='bombard'&&flag('fog'))return 'Brouillard';
-  if(a.key==='bombard'&&flag('nobomb',side))return 'Couloirs humanitaires';
-  if((a.key==='bombard'||a.key==='sabotage')&&truce>0)return 'Cessez-le-feu';
-  if(a.key==='renforts'&&(!qgOf(side)||qgOf(side).owner!==side))return 'QG perdu';
+  if(time<BAL.prep)return trad('Après la préparation');
+  if(a.key==='bombard'&&flag('fog'))return trad('Brouillard');
+  if(a.key==='bombard'&&flag('nobomb',side))return trad('Couloirs humanitaires');
+  if((a.key==='bombard'||a.key==='sabotage')&&truce>0)return trad('Cessez-le-feu');
+  if(a.key==='renforts'&&(!qgOf(side)||qgOf(side).owner!==side))return trad('QG perdu');
   return null;
 }
 function abReady(side,i){const a=ABL[side][i],st=P[side].ab[a.key];return !!st.u&&st.cd<=0&&!abBlock(side,i);}
 function canUnlock(side,i){const a=ABL[side][i],st=P[side].ab[a.key];return !st.u&&P[side].pc>=a.cost&&curPhase>=a.ph;}
-function unlockAbility(side,i){if(!canUnlock(side,i))return false;const a=ABL[side][i];P[side].pc-=a.cost;P[side].ab[a.key].u=1;if(ctrl[side]==='human')log(`Capacité débloquée : ${a.name}`,side,undefined,side);if(side===player)tutFlag.unlock=true;return true;}
+function unlockAbility(side,i){if(!canUnlock(side,i))return false;const a=ABL[side][i];P[side].pc-=a.cost;P[side].ab[a.key].u=1;if(ctrl[side]==='human')log(MSG('Capacité débloquée : {nom}',{nom:a.name}),side,undefined,side);if(side===player)tutFlag.unlock=true;return true;}
 function validTarget(side,i,n){const t=ABL[side][i].target;if(!n||!n.alive)return false;
   if(t==='enemy')return n.owner!==side;if(t==='enemyOwned')return n.owner===enemyOf(side);if(t==='own')return n.owner===side;if(t==='bridge')return n.type==='bridge';return true;}
 function useAbility(side,i,n){
@@ -692,16 +702,16 @@ function useAbility(side,i,n){
     case 'barrages':addMod(enemyOf(side),'speed',0.6,25,'Barrages routiers');log('Barrages routiers : les colonnes ennemies ralentissent',side);break;
     case 'mobil':{for(const m of nodes)if(m.alive&&m.owner===side&&m.home===side){m.troops+=3;floatAt(m,'+3',C.gold);}log('Mobilisation civile : +3 soldats sur vos points d\'origine',side);break;}
     case 'bombard':{const f=P[side].tech.art>=2?0.5:0.35;const lost=n.troops*f;n.troops-=lost;if(mineN(n))P[n.owner].lost+=lost;addSup(side,-2);
-      for(let k=0;k<6;k++)effects.push({type:'boom',x:n.x+(Math.random()-0.5)*40,y:n.y+(Math.random()-0.5)*40,t:-k*0.08,c:OC[side]});log(`Bombardement sur ${n.name}`,side,n.i);break;}
-    case 'sabotage':n.sab=30;computeSupply();effects.push({type:'ring',x:n.x,y:n.y,t:0,c:C.gold});log(`Sabotage : ${n.name} coupé de son ravitaillement`,side,n.i);break;
-    case 'hold':n.hold=30;effects.push({type:'ring',x:n.x,y:n.y,t:0,c:C.gold});log(`${n.name} tient la position`,side);break;
+      for(let k=0;k<6;k++)effects.push({type:'boom',x:n.x+(Math.random()-0.5)*40,y:n.y+(Math.random()-0.5)*40,t:-k*0.08,c:OC[side]});log(MSG('Bombardement sur {nom}',{nom:n.name}),side,n.i);break;}
+    case 'sabotage':n.sab=30;computeSupply();effects.push({type:'ring',x:n.x,y:n.y,t:0,c:C.gold});log(MSG('Sabotage : {nom} coupé de son ravitaillement',{nom:n.name}),side,n.i);break;
+    case 'hold':n.hold=30;effects.push({type:'ring',x:n.x,y:n.y,t:0,c:C.gold});log(MSG('{nom} tient la position',{nom:n.name}),side);break;
   }
   P[side].ab[a.key].cd=a.cd;
   if(side===player)tutFlag.ability=true;
   return true;
 }
-function dynBlock(s){if(time<BAL.prep)return 'Après la préparation';if(P[s].charges<=0)return 'Plus de charges';if(P[s].dynCd>0)return `Prête dans ${Math.ceil(P[s].dynCd)} s`;if(truce>0)return 'Cessez-le-feu';return null;}
-function useDyn(s,n){if(dynBlock(s)||!n||!n.alive||n.type!=='bridge')return false;P[s].charges--;P[s].dynCd=45;blowBridge(n,`dynamité par les ${sideName(s,1)}`);if(s===player)tutFlag.ability=true;return true;}
+function dynBlock(s){if(time<BAL.prep)return trad('Après la préparation');if(P[s].charges<=0)return trad('Plus de charges');if(P[s].dynCd>0)return trad('Prête dans {n} s',{n:Math.ceil(P[s].dynCd)});if(truce>0)return trad('Cessez-le-feu');return null;}
+function useDyn(s,n){if(dynBlock(s)||!n||!n.alive||n.type!=='bridge')return false;P[s].charges--;P[s].dynCd=45;blowBridge(n,MSG('{nom} dynamité par les {camp}',{nom:n.name,camp:sideName(s,1)}));if(s===player)tutFlag.ability=true;return true;}
 function blowBridge(n,how){
   n.alive=false;if(mineN(n))P[n.owner].lost+=n.troops;n.troops=0;n.owner='X';n.st=null;n.bar=0;n.rally=-1;n.collapse=0;n.rebuild=null;n.hold=0;n.sab=0;
   for(const j of adj[n.i])adj[j].delete(n.i);adj[n.i].clear();
@@ -709,7 +719,7 @@ function blowBridge(n,how){
   squads=squads.filter(s=>{const a=s.path[s.seg],b=s.path[s.seg+1];if(a===n.i||b===n.i){P[s.owner].lost+=s.n;return false;}return true;});
   sel.delete(n.i);drops=drops.filter(d=>d.n!==n.i);terrDirty=true;computeSupply();
   for(let i=0;i<9;i++)effects.push({type:'boom',x:n.x+(Math.random()-0.5)*30,y:n.y+(Math.random()-0.5)*30,t:-i*0.06,c:C.gold});
-  log(`${n.name} ${how}`,'X',n.i);
+  log(how,'X',n.i);
 }
 
 /* ---------- Événements aléatoires ---------- */
@@ -726,32 +736,32 @@ function makeOffer(key){for(const s of['A','B']){const o=OFFERS[key];if(ctrl[s]=
 const EVENTS=[
   {id:'greve',w:1,title:'Grève',run(){this.title=MAP.ev&&MAP.ev.greve||'Grève des transports';addMod('*','speed',0.7,45,this.title);return 'Tous les déplacements sont ralentis de 30 % pendant 45 s.';}},
   {id:'crue',w:1,title:'Crue',cond:()=>nodes.some(n=>n.type==='bridge'&&n.alive),run(){const rivs=[...new Set(nodes.filter(n=>n.type==='bridge'&&n.alive).map(n=>n.river))];const r=pickR(rivs);const nm=(MAP.deco&&MAP.deco.names||{})[r];
-    this.title=nm?nm[0]:`Crue ${deOf(r)}`;addMod('*','crue',1,40,this.title,0,{river:r});return nm?nm[1]:`Les ponts ${deOf(r)} sont submergés : traversées très ralenties pendant 40 s.`;}},
+    this.title=nm?nm[0]:MSG('Crue {de}',{de:deOf(r),riviere:r});addMod('*','crue',1,40,this.title,0,{river:r});return nm?nm[1]:MSG('Les ponts {de} sont submergés : traversées très ralenties pendant 40 s.',{de:deOf(r),riviere:r});}},
   {id:'brouillard',w:0.9,title:'Brouillard sur la ville',run(){addMod('*','fog',1,35,'Brouillard');return 'Mortiers et bombardements sont aveugles pendant 35 s.';}},
-  {id:'fragile',w:1,cond:()=>nodes.some(n=>n.type==='bridge'&&n.alive&&!n.collapse),title:'Pont fragilisé',run(){const n=pickR(nodes.filter(n=>n.type==='bridge'&&n.alive&&!n.collapse));n.collapse=25;return `Le ${n.name} menace de s'effondrer dans 25 s. Tout ce qui s'y trouvera sera perdu.`;},node:true},
-  {id:'largage',w:1.1,title:'Largage de ravitaillement',run(){const pool=nodes.filter(n=>n.alive&&(isObj(n)||n.side==='N'));const n=pickR(pool);drops.push({n:n.i,t:40});return `Une cargaison tombe sur ${n.name}. Le camp qui tiendra ce point dans 40 s gagne 120 de ravitaillement et 1 PC.`;}},
+  {id:'fragile',w:1,cond:()=>nodes.some(n=>n.type==='bridge'&&n.alive&&!n.collapse),title:'Pont fragilisé',run(){const n=pickR(nodes.filter(n=>n.type==='bridge'&&n.alive&&!n.collapse));n.collapse=25;return MSG("Le {nom} menace de s'effondrer dans 25 s. Tout ce qui s'y trouvera sera perdu.",{nom:n.name});},node:true},
+  {id:'largage',w:1.1,title:'Largage de ravitaillement',run(){const pool=nodes.filter(n=>n.alive&&(isObj(n)||n.side==='N'));const n=pickR(pool);drops.push({n:n.i,t:40});return MSG('Une cargaison tombe sur {nom}. Le camp qui tiendra ce point dans 40 s gagne 120 de ravitaillement et 1 PC.',{nom:n.name});}},
   {id:'soulevement',w:1,cond:()=>nodes.some(occupied),title:'Soulèvement',run(){const n=pickR(nodes.filter(occupied));const o=n.owner,l=n.troops*0.5;n.troops-=l;P[o].lost+=l;
-    if(n.troops<8){const h=n.home;n.owner=h;n.troops=10;n.dis=10;n.rally=-1;n.bar=0;terrDirty=true;sel.delete(n.i);computeSupply();return `${n.name} se soulève contre l'occupant et revient aux ${sideName(h,1)}.`;}
-    return `La population de ${n.name} se soulève : l'occupant y perd la moitié de ses hommes.`;}},
-  {id:'incendie',w:0.9,cond:()=>nodes.some(n=>n.alive&&mineN(n)&&n.type==='dist'),title:'Incendie',run(){const n=pickR(nodes.filter(n=>n.alive&&mineN(n)&&n.type==='dist'));const l=n.troops*0.3;n.troops-=l;P[n.owner].lost+=l;n.dis=20;return `Un incendie ravage ${n.name} : garnison −30 %, production arrêtée 20 s.`;}},
+    if(n.troops<8){const h=n.home;n.owner=h;n.troops=10;n.dis=10;n.rally=-1;n.bar=0;terrDirty=true;sel.delete(n.i);computeSupply();return MSG("{nom} se soulève contre l'occupant et revient aux {camp}.",{nom:n.name,camp:sideName(h,1)});}
+    return MSG("La population de {nom} se soulève : l'occupant y perd la moitié de ses hommes.",{nom:n.name});}},
+  {id:'incendie',w:0.9,cond:()=>nodes.some(n=>n.alive&&mineN(n)&&n.type==='dist'),title:'Incendie',run(){const n=pickR(nodes.filter(n=>n.alive&&mineN(n)&&n.type==='dist'));const l=n.troops*0.3;n.troops-=l;P[n.owner].lost+=l;n.dis=20;return MSG('Un incendie ravage {nom} : garnison −30 %, production arrêtée 20 s.',{nom:n.name});}},
   {id:'defection',w:0.9,title:'Défection',run(){const s=P.A.sup<P.B.sup?'A':P.B.sup<P.A.sup?'B':pickR(['A','B']);const e=enemyOf(s);
     const src=nodes.filter(n=>n.alive&&n.owner===s&&n.troops>=20&&[...adj[n.i]].some(j=>nodes[j].owner===e));if(!src.length)return 'Une compagnie hésite à changer de camp, puis se ravise.';
-    const n=pickR(src),dst=nodes[[...adj[n.i]].find(j=>nodes[j].owner===e)];n.troops-=10;dst.troops+=10;return `Démoralisés, 10 soldats des ${sideName(s,1)} passent à l'ennemi depuis ${n.name}.`;}},
+    const n=pickR(src),dst=nodes[[...adj[n.i]].find(j=>nodes[j].owner===e)];n.troops-=10;dst.troops+=10;return MSG("Démoralisés, 10 soldats des {camp} passent à l'ennemi depuis {nom}.",{camp:sideName(s,1),nom:n.name});}},
   {id:'marchand',w:0.9,title:"Marchand d'armes",run(){makeOffer('marchand');return 'Un trafiquant propose des armes aux deux camps : 80 de ravitaillement pour +20 % d\'attaque pendant 60 s.';},offer:'marchand'},
   {id:'ingenieurs',w:0.8,title:'Ingénieurs suisses',run(){makeOffer('ingenieurs');return 'Une équipe du génie offre ses services : 60 de ravitaillement pour des chantiers deux fois plus rapides pendant 60 s.';},offer:'ingenieurs'},
-  {id:'match',w:0.7,title:'Soir de match',cond:()=>!!(MAP.ev&&MAP.ev.match&&MAP.ev.match.ids.some(id=>idx[id]!=null)),run(){const m=MAP.ev.match;this.title=m.title;addMod('*','slow',1,45,'Soir de match',0,{nodes:m.ids.filter(id=>idx[id]!=null).map(id=>idx[id])});return `Supporters dans les rues : ${m.text} sont deux fois plus lents à traverser pendant 45 s.`;}},
-  {id:'neige',w:0.7,title:'Neige',run(){this.title=`Neige sur ${MAP.name}`;addMod('*','speed',0.75,50,'Neige');addMod('*','prod',0.9,50,'Neige');return 'Les rues sont blanches : déplacements −25 % et production −10 % pour tous pendant 50 s.';}},
-  {id:'vogue',w:0.7,cond:()=>{const f=MAP.ev&&MAP.ev.fete;return !!(f&&idx[f.node]!=null&&mineN(nodes[idx[f.node]]));},title:'Fête',run(){const f=MAP.ev.fete;this.title=f.title;const o=nodes[idx[f.node]].owner;addSup(o,6);P[o].cr+=60;return `${f.text} profite aux ${sideName(o,1)} : soutien +6 et 60 de ravitaillement.`;}},
+  {id:'match',w:0.7,title:'Soir de match',cond:()=>!!(MAP.ev&&MAP.ev.match&&MAP.ev.match.ids.some(id=>idx[id]!=null)),run(){const m=MAP.ev.match;this.title=m.title;addMod('*','slow',1,45,'Soir de match',0,{nodes:m.ids.filter(id=>idx[id]!=null).map(id=>idx[id])});return MSG('Supporters dans les rues : {lieux} sont deux fois plus lents à traverser pendant 45 s.',{lieux:m.text});}},
+  {id:'neige',w:0.7,title:'Neige',run(){this.title=MSG('Neige sur {ville}',{ville:MAP.name});addMod('*','speed',0.75,50,'Neige');addMod('*','prod',0.9,50,'Neige');return 'Les rues sont blanches : déplacements −25 % et production −10 % pour tous pendant 50 s.';}},
+  {id:'vogue',w:0.7,cond:()=>{const f=MAP.ev&&MAP.ev.fete;return !!(f&&idx[f.node]!=null&&mineN(nodes[idx[f.node]]));},title:'Fête',run(){const f=MAP.ev.fete;this.title=f.title;const o=nodes[idx[f.node]].owner;addSup(o,6);P[o].cr+=60;return MSG('{fete} profite aux {camp} : soutien +6 et 60 de ravitaillement.',{fete:f.text,camp:sideName(o,1)});}},
   {id:'canuts',w:0.6,cond:()=>{const f=MAP.ev&&MAP.ev.riot;return !!(f&&idx[f.node]!=null&&mineN(nodes[idx[f.node]]));},title:'Révolte',run(){
     const f=MAP.ev.riot;this.title=f.title;const n=nodes[idx[f.node]],o=n.owner,l=n.troops*0.5;n.troops-=l;P[o].lost+=l;
-    if(n.troops<8){n.owner='N';n.troops=14;n.st=null;n.lvl=0;n.bar=0;n.rally=-1;terrDirty=true;sel.delete(n.i);computeSupply();return `${n.name} se soulève et chasse les ${sideName(o,1)}. Le quartier redevient neutre.`;}
-    return `${n.name} se soulève : les ${sideName(o,1)} y perdent la moitié de leurs hommes.`;}},
-  {id:'convoi',w:0.8,title:'Convoi de ravitaillement',run(){const s=behind();P[s].cr+=80;return `Un convoi rejoint les ${sideName(s,1)} : +80 ravitaillement.`;}},
-  {id:'lumieres',w:0.6,title:'Fête',run(){const f=MAP.ev&&MAP.ev.party||{title:'Fête de la musique',text:'La ville danse dans les rues'};this.title=f.title;addMod('*','prod',1.3,35,f.title,1);addSup('A',4);addSup('B',4);return `${f.text} : production +30 % pour tous pendant 35 s.`;}},
+    if(n.troops<8){n.owner='N';n.troops=14;n.st=null;n.lvl=0;n.bar=0;n.rally=-1;terrDirty=true;sel.delete(n.i);computeSupply();return MSG('{nom} se soulève et chasse les {camp}. Le quartier redevient neutre.',{nom:n.name,camp:sideName(o,1)});}
+    return MSG('{nom} se soulève : les {camp} y perdent la moitié de leurs hommes.',{nom:n.name,camp:sideName(o,1)});}},
+  {id:'convoi',w:0.8,title:'Convoi de ravitaillement',run(){const s=behind();P[s].cr+=80;return MSG('Un convoi rejoint les {camp} : +80 ravitaillement.',{camp:sideName(s,1)});}},
+  {id:'lumieres',w:0.6,title:'Fête',run(){const f=MAP.ev&&MAP.ev.party||{title:'Fête de la musique',text:'La ville danse dans les rues'};this.title=f.title;addMod('*','prod',1.3,35,f.title,1);addSup('A',4);addSup('B',4);return MSG('{fete} : production +30 % pour tous pendant 35 s.',{fete:f.text});}},
   {id:'panne',w:0.8,title:'Panne de courant',run(){addMod('*','inc',0.5,35,'Panne de courant');return 'La ville est plongée dans le noir : ravitaillement −50 % pour tous pendant 35 s.';}},
-  {id:'desertion',w:1.2,cond:()=>P.A.sup<35||P.B.sup<35,title:'Désertions',run(){const s=P.A.sup<P.B.sup?'A':'B';let l=0;for(const n of nodes)if(n.alive&&n.owner===s){const d=n.troops*0.15;n.troops-=d;l+=d;}P[s].lost+=l;return `Le moral s'effondre chez les ${sideName(s,1)} : ${Math.round(l)} soldats désertent.`;}},
-  {id:'presse',w:0.7,title:'Scandale dans la presse',run(){const s=pickR(['A','B']);addSup(s,-10);return `Révélations dans ${MAP.ev&&MAP.ev.paper||'la presse locale'} : une bavure des ${sideName(s,1)} fait chuter leur soutien de 10.`;}},
-  {id:'orage',w:0.7,title:'Orage',run(){this.title=`Orage sur ${MAP.name}`;addMod('*','atk',0.85,30,'Orage');return 'Visibilité nulle : attaque −15 % pour tous pendant 30 s.';}}
+  {id:'desertion',w:1.2,cond:()=>P.A.sup<35||P.B.sup<35,title:'Désertions',run(){const s=P.A.sup<P.B.sup?'A':'B';let l=0;for(const n of nodes)if(n.alive&&n.owner===s){const d=n.troops*0.15;n.troops-=d;l+=d;}P[s].lost+=l;return MSG("Le moral s'effondre chez les {camp} : {n} soldats désertent.",{camp:sideName(s,1),n:Math.round(l)});}},
+  {id:'presse',w:0.7,title:'Scandale dans la presse',run(){const s=pickR(['A','B']);addSup(s,-10);return MSG('Révélations dans {journal} : une bavure des {camp} fait chuter leur soutien de 10.',{journal:MAP.ev&&MAP.ev.paper||'la presse locale',camp:sideName(s,1)});}},
+  {id:'orage',w:0.7,title:'Orage',run(){this.title=MSG('Orage sur {ville}',{ville:MAP.name});addMod('*','atk',0.85,30,'Orage');return 'Visibilité nulle : attaque −15 % pour tous pendant 30 s.';}}
 ];
 let bannerT=0;
 function announce(lab,title,text,offerKey){
@@ -759,7 +769,7 @@ function announce(lab,title,text,offerKey){
   showBanner(lab,title,text,mine?OFFERS[offerKey].label:null);
   if(NET.role==='host')netEv(['b',lab,title,text,offerKey||'']);
 }
-function showBanner(lab,title,text,btn){if(SIM.on)return;$('bnL').textContent=lab;$('bnT').textContent=title;$('bnX').textContent=text;banner.hidden=false;bannerT=btn?20:8;const b=$('bnBtn');b.hidden=!btn;if(btn)b.textContent=btn;}
+function showBanner(lab,title,text,btn){if(SIM.on)return;$('bnL').textContent=tx(lab);$('bnT').textContent=tx(title);$('bnX').textContent=tx(text);banner.hidden=false;bannerT=btn?20:8;const b=$('bnBtn');b.hidden=!btn;if(btn)b.textContent=tx(btn);}
 function triggerEvent(){
   const pool=EVENTS.filter(e=>!e.cond||e.cond());let tot=pool.reduce((a,e)=>a+e.w,0),r=Math.random()*tot,e=pool[0];
   for(const x of pool){r-=x.w;if(r<=0){e=x;break;}}
@@ -770,7 +780,7 @@ function triggerEvent(){
 /* ---------- Décisions politiques ---------- */
 const objHeld=s=>OBJ.filter(id=>nodes[idx[id]].owner===s).length;
 function scoreRate(s){const d=objHeld(s)-objHeld(enemyOf(s));if(d<=0)return 0;return BAL.rate*d*(OBJ.length>1&&objHeld(s)===OBJ.length?BAL.allObjMult:1);}
-const PENDING={paris(){const q=qgOf('B'),n=q&&q.owner==='B'?q:keyNode('B');if(!n)return;n.troops+=50;effects.push({type:'ring',x:n.x,y:n.y,t:0,c:C.def});log(`${MAP.ev&&MAP.ev.help?MAP.ev.help.c:'La colonne de renfort'} arrive à ${n.name} : +50 soldats`,'B',n.i);}};
+const PENDING={paris(){const q=qgOf('B'),n=q&&q.owner==='B'?q:keyNode('B');if(!n)return;n.troops+=50;effects.push({type:'ring',x:n.x,y:n.y,t:0,c:C.def});log(MSG('{colonne} arrive à {nom} : +50 soldats',{colonne:MAP.ev&&MAP.ev.help?MAP.ev.help.c:'La colonne de renfort',nom:n.name}),'B',n.i);}};
 const DECS={
   A:[
     {id:'loi',once:1,title:'Loi martiale',text:'Production +20 % jusqu\'à la fin. Ravitaillement −20 %. Soutien −10.',apply(s){P[s].perm.prod*=1.2;P[s].perm.inc*=0.8;addSup(s,-10);},ai:s=>P[s].sup>45?4:1.5},
@@ -798,7 +808,7 @@ function offerDecisions(s){
   for(let i=pool.length-1;i>0;i--){const j=(Math.random()*(i+1))|0;[pool[i],pool[j]]=[pool[j],pool[i]];}
   return pool.slice(0,3);
 }
-function takeDecision(s,d){P[s].taken.add(d.id);P[s].decisions.push(d.title);d.apply(s);log(`Décision : ${d.title}`,s,undefined,s);log(`Décision des ${sideName(s,1)} : ${d.title}`,s,undefined,enemyOf(s));}
+function takeDecision(s,d){P[s].taken.add(d.id);P[s].decisions.push(d.title);d.apply(s);log(MSG('Décision : {titre}',{titre:d.title}),s,undefined,s);log(MSG('Décision des {camp} : {titre}',{camp:sideName(s,1),titre:d.title}),s,undefined,enemyOf(s));}
 function aiDecide(s){const opts=offerDecisions(s);if(!opts.length)return;let best=opts[0],bs=-1;for(const d of opts){const sc=d.ai(s)+Math.random()*1.5;if(sc>bs){bs=sc;best=d;}}takeDecision(s,best);}
 
 /* ================= IA ================= */
@@ -916,19 +926,19 @@ function update(dt){
   time+=dt;
   if(!prepDone&&time>=BAL.prep){prepDone=true;launchPlanned('Fin de la préparation');
     announce('Préparation terminée','La bataille commence','Vos troupes peuvent maintenant attaquer.');}
-  const ph=phaseOf(time);if(ph!==curPhase){curPhase=ph;for(const s of['A','B'])P[s].pc++;log(`Phase ${ROM[ph]} : ${PHN[ph]} · +1 PC`,'X');
-    announce(`Phase ${ROM[ph]}`,PHN[ph],ph===2?'Fortins, mortiers, niveau 2 des casernes, dépôts et barricades, armes et artillerie : débloqués. +1 PC.':'Niveau 2 des fortins et mortiers, toutes les recherches de niveau 2 : débloqués. +1 PC.');}
+  const ph=phaseOf(time);if(ph!==curPhase){curPhase=ph;for(const s of['A','B'])P[s].pc++;log(MSG('Phase {num} : {nom} · +1 PC',{num:ROM[ph],nom:PHN[ph]}),'X');
+    announce(MSG('Phase {num}',{num:ROM[ph]}),PHN[ph],ph===2?'Fortins, mortiers, niveau 2 des casernes, dépôts et barricades, armes et artillerie : débloqués. +1 PC.':'Niveau 2 des fortins et mortiers, toutes les recherches de niveau 2 : débloqués. +1 PC.');}
   if(truce>0)truce=Math.max(0,truce-dt);
   for(const m of mods)m.t-=dt;mods=mods.filter(m=>m.t>0);
   for(const p of pending)p.t-=dt;const due=pending.filter(p=>p.t<=0);pending=pending.filter(p=>p.t>0);for(const p of due)PENDING[p.k]();
   for(const s of['A','B'])if(offerS[s]){offerS[s].t-=dt;if(offerS[s].t<=0)offerS[s]=null;}
   if(time>=BAL.prep){evClock-=dt;if(evClock<=0){triggerEvent();evClock=BAL.evMin+Math.random()*(BAL.evMax-BAL.evMin);}}
-  for(const d of drops){d.t-=dt;if(d.t<=0){const n=nodes[d.n];if(mineN(n)){P[n.owner].cr+=120;P[n.owner].pc++;floatAt(n,'+120 ravit. · +1 PC',C.gold);log(`Largage récupéré à ${n.name} par les ${sideName(n.owner,1)} : +120 et 1 PC`,n.owner,n.i);effects.push({type:'ring',x:n.x,y:n.y,t:0,c:C.gold});}else log(`Le largage de ${n.name} est perdu`,'X');}}
+  for(const d of drops){d.t-=dt;if(d.t<=0){const n=nodes[d.n];if(mineN(n)){P[n.owner].cr+=120;P[n.owner].pc++;floatAt(n,'+120 ravit. · +1 PC',C.gold);log(MSG('Largage récupéré à {nom} par les {camp} : +120 et 1 PC',{nom:n.name,camp:sideName(n.owner,1)}),n.owner,n.i);effects.push({type:'ring',x:n.x,y:n.y,t:0,c:C.gold});}else log(MSG('Le largage de {nom} est perdu',{nom:n.name}),'X');}}
   drops=drops.filter(d=>d.t>0);
   for(const s of['A','B']){const p=P[s];
     for(const k in p.ab)if(p.ab[k].cd>0)p.ab[k].cd=Math.max(0,p.ab[k].cd-dt);
     if(p.dynCd>0)p.dynCd=Math.max(0,p.dynCd-dt);
-    if(p.res){p.res.t-=dt*p.perk.research;if(p.res.t<=0){const k=p.res.k;p.tech[k]++;p.res=null;if(ctrl[s]==='human')log(`Recherche terminée : ${TECH[k].lv[p.tech[k]-1].n}`,s,undefined,s);}}
+    if(p.res){p.res.t-=dt*p.perk.research;if(p.res.t<=0){const k=p.res.k;p.tech[k]++;p.res=null;if(ctrl[s]==='human')log(MSG('Recherche terminée : {nom}',{nom:TECH[k].lv[p.tech[k]-1].n}),s,undefined,s);}}
     if(time>=BAL.prep){
       p.pcT+=dt;if(p.pcT>=BAL.pcEvery){p.pcT=0;p.pc++;}
       p.nextDec-=dt;if(p.nextDec<=0){p.nextDec=BAL.decEvery;if(ctrl[s]==='ai')aiDecide(s);else if(!decP[s]){const opts=offerDecisions(s);if(opts.length)decP[s]={ids:opts.map(o=>o.id),t:BAL.decWindow};}}
@@ -938,20 +948,20 @@ function update(dt){
   for(const s of['A','B'])if(decP[s]){decP[s].t-=dt;if(decP[s].t<=0){log('Décision ajournée : le conseil n\'a pas tranché','X',undefined,s);decP[s]=null;}}
   computeSupply();updWall();
   for(const n of nodes){
-    if(!n.alive){if(n.rebuild){const s=n.rebuild.s;if(!EDADJ[n.i].some(j=>nodes[j].alive&&nodes[j].owner===s)){n.rebuild=null;log(`Chantier du ${n.name} abandonné`,'X');continue;}
-        n.rebuild.t-=dt*modOf(s,'buildSpeed');if(n.rebuild.t<=0){n.rebuild=null;n.alive=true;n.owner=s;n.troops=6;n.dis=0;rebuildAdj();computeSupply();terrDirty=true;effects.push({type:'ring',x:n.x,y:n.y,t:0,c:OC[s]});log(`${n.name} reconstruit par les ${sideName(s,1)}`,s,n.i);}}
+    if(!n.alive){if(n.rebuild){const s=n.rebuild.s;if(!EDADJ[n.i].some(j=>nodes[j].alive&&nodes[j].owner===s)){n.rebuild=null;log(MSG('Chantier du {nom} abandonné',{nom:n.name}),'X');continue;}
+        n.rebuild.t-=dt*modOf(s,'buildSpeed');if(n.rebuild.t<=0){n.rebuild=null;n.alive=true;n.owner=s;n.troops=6;n.dis=0;rebuildAdj();computeSupply();terrDirty=true;effects.push({type:'ring',x:n.x,y:n.y,t:0,c:OC[s]});log(MSG('{nom} reconstruit par les {camp}',{nom:n.name,camp:sideName(s,1)}),s,n.i);}}
       continue;}
     if(n.flash>0)n.flash=Math.max(0,n.flash-dt*2.5);if(n.hold>0)n.hold=Math.max(0,n.hold-dt);if(n.sab>0)n.sab=Math.max(0,n.sab-dt);
-    if(n.collapse>0){n.collapse-=dt;if(n.collapse<=0){n.collapse=0;blowBridge(n,"s'est effondré");continue;}}
+    if(n.collapse>0){n.collapse-=dt;if(n.collapse<=0){n.collapse=0;blowBridge(n,MSG("{nom} s'est effondré",{nom:n.name}));continue;}}
     const bs=mineN(n)?modOf(n.owner,'buildSpeed')*P[n.owner].perk.build:1;
     if(n.dis>0)n.dis=Math.max(0,n.dis-dt);if(n.build>0)n.build=Math.max(0,n.build-dt*bs);if(n.bbuild>0)n.bbuild=Math.max(0,n.bbuild-dt*bs);
     if(mineN(n)){const c=capOf(n),b0=n.troops,ic=incOf(n)*dt;if(n.troops<c)n.troops=Math.min(c,n.troops+prodOf(n)*dt);P[n.owner].cr+=ic;
       if((n.owner===player||ctrl[n.owner]==='human')&&!SIM.on){n.accS+=n.troops-b0;n.accI+=ic;n.flT-=dt;if(n.flT<=0){n.flT=5;n.flA=!n.flA;
-        if(n.flA&&n.accI>=1){const v=Math.floor(n.accI);n.accI-=v;prodFloat(n,`+${v} ravit.`,C.gold);}
-        else if(!n.flA&&n.accS>=1){const v=Math.floor(n.accS);n.accS-=v;prodFloat(n,`+${v} sold.`,OC[n.owner]);}}}}}
+        if(n.flA&&n.accI>=1){const v=Math.floor(n.accI);n.accI-=v;prodFloat(n,MSG('+{n} ravit.',{n:v}),C.gold);}
+        else if(!n.flA&&n.accS>=1){const v=Math.floor(n.accS);n.accS-=v;prodFloat(n,MSG('+{n} sold.',{n:v}),OC[n.owner]);}}}}}
   army={A:0,B:0};for(const n of nodes)if(mineN(n))army[n.owner]+=n.troops;for(const q of squads)army[q.owner]+=q.n;
   for(const s of['A','B']){const p=P[s];p.cr=Math.max(-1,p.cr-army[s]*BAL.upkeep*upkMult(s)*dt+arrSum(s,'inc')*dt*(time>=BAL.prep?1:0));
-    if(arrSum(s,'pc')>0&&time>=BAL.prep){p.arrPcT=(p.arrPcT||0)+dt;if(p.arrPcT>=150){p.arrPcT=0;p.pc++;const z=ARR.find((a,i)=>arrOwn[i]===s&&a.b.pc);log(`${z?z.n:'Arrondissement'} : +1 PC`,s,undefined,s);}}}
+    if(arrSum(s,'pc')>0&&time>=BAL.prep){p.arrPcT=(p.arrPcT||0)+dt;if(p.arrPcT>=150){p.arrPcT=0;p.pc++;const z=ARR.find((a,i)=>arrOwn[i]===s&&a.b.pc);log(MSG('{arr} : +1 PC',{arr:z?z.n:'Arrondissement'}),s,undefined,s);}}}
   rallyT+=dt;if(rallyT>=3){rallyT=0;for(const n of nodes){if(n.rally<0||!mineN(n)||!n.alive)continue;const t=nodes[n.rally];if(!t.alive){n.rally=-1;continue;}
     const keep=isObj(n)||n.type==='base'?12:5;const amt=n.troops-keep;if(amt>=5){const p=path(n.i,t.i);if(p)dispatch(n,p,amt);else n.rally=-1;}}}
   if(truce<=0){
@@ -1003,14 +1013,14 @@ function update(dt){
   const has=s=>nodes.some(n=>n.alive&&n.owner===s)||squads.some(q=>q.owner===s);
   if(!has('A'))endGame('B','Les attaquants ont été anéantis.');
   else if(!has('B'))endGame('A','Les défenseurs ont été anéantis.');
-  else if(time>=FMT.dur){const a=P.A.score,b=P.B.score;if(Math.abs(a-b)<1)endGame(null,'Armistice : aucun QG n\'est tombé et le contrôle de la ville est à égalité.');else{const w=a>b?'A':'B';endGame(w,`Armistice : aucun QG n'est tombé. Les ${sideName(w,1)} l'emportent aux points de contrôle (${Math.floor(Math.max(a,b))} contre ${Math.floor(Math.min(a,b))}).`);}}
+  else if(time>=FMT.dur){const a=P.A.score,b=P.B.score;if(Math.abs(a-b)<1)endGame(null,'Armistice : aucun QG n\'est tombé et le contrôle de la ville est à égalité.');else{const w=a>b?'A':'B';endGame(w,MSG("Armistice : aucun QG n'est tombé. Les {camp} l'emportent aux points de contrôle ({a} contre {b}).",{camp:sideName(w,1),a:Math.floor(Math.max(a,b)),b:Math.floor(Math.min(a,b))}));}}
 }
 
 function alertTick(dt){
   if(SIM.on||spectate)return;alertT+=dt;if(alertT<1)return;alertT=0;const threat={};
   for(const s of squads){if(s.owner===player)continue;const t=s.path[s.seg+1];if(t!=null&&nodes[t].owner===player)threat[t]=(threat[t]||0)+s.n*atkMult(s.owner);}
   for(const k in threat){const n=nodes[k];if(!(isObj(n)||n.type==='base'||n.st))continue;if(threat[k]<n.troops*defMult(n)*0.6)continue;if(alertCd[k]>time)continue;alertCd[k]=time+20;
-    if(NET.role==='guest')pushFeed(`${n.name} menacé : ${Math.round(threat[k])} assaillants en approche`,'alert',n.i);else log(`${n.name} menacé : ${Math.round(threat[k])} assaillants en approche`,'alert',n.i,player);}
+    const al=MSG('{nom} menacé : {n} assaillants en approche',{nom:n.name,n:Math.round(threat[k])});if(NET.role==='guest')pushFeed(al,'alert',n.i);else log(al,'alert',n.i,player);}
 }
 
 /* ================= Caméra & rendu ================= */
@@ -1065,15 +1075,15 @@ function render(){
   for(const p of planned){const n=nodes[p.from],t=nodes[p.to];if(p.s!==player||n.owner!==player)continue;const pa=path(n.i,t.i);if(!pa)continue;
     ctx.strokeStyle=OC[player];ctx.lineWidth=2.5;ctx.globalAlpha=0.85;ctx.setLineDash([10,6]);ctx.beginPath();pa.forEach((k,m)=>{const[x,y]=S(nodes[k].x,nodes[k].y);m?ctx.lineTo(x,y):ctx.moveTo(x,y);});ctx.stroke();ctx.setLineDash([]);
     const a=nodes[pa[pa.length-2]];const[x1,y1]=S(a.x,a.y),[x2,y2]=S(t.x,t.y);arrow(x1,y1,x2,y2,0,t.r*z+6,OC[player],0.85);
-    const[mx,my]=S((n.x+a.x)/2,(n.y+a.y)/2);const lb=`${Math.floor(n.troops*p.ratio)} prévus`;ctx.font=`700 12px ${FD}`;const w=ctx.measureText(lb).width+10;ctx.fillStyle=C.ink;ctx.fillRect(mx-w/2,my-9,w,18);ctx.fillStyle=OC[player];ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(lb,mx,my);}
+    const[mx,my]=S((n.x+a.x)/2,(n.y+a.y)/2);const lb=trad('{n} prévus',{n:Math.floor(n.troops*p.ratio)});ctx.font=`700 12px ${FD}`;const w=ctx.measureText(lb).width+10;ctx.fillStyle=C.ink;ctx.fillRect(mx-w/2,my-9,w,18);ctx.fillStyle=OC[player];ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(lb,mx,my);}
   const preview=state==='play'&&hover&&hover.alive&&sel.size&&!(sel.size===1&&sel.has(hover.i));
   if(preview&&(abMode===-1||abMode===-2)){
     let tot=0;ctx.strokeStyle=abMode===-2?C.gold:OC[player];ctx.lineWidth=2.5;ctx.setLineDash([8,6]);ctx.lineDashOffset=-time*30;
     for(const i of sel){if(i===hover.i)continue;const p=path(i,hover.i);if(!p)continue;tot+=Math.floor(nodes[i].troops*ratio);ctx.beginPath();p.forEach((k,m)=>{const[x,y]=S(nodes[k].x,nodes[k].y);m?ctx.lineTo(x,y):ctx.moveTo(x,y);});ctx.stroke();}
     ctx.setLineDash([]);ctx.lineDashOffset=0;
     const[x,y]=S(hover.x,hover.y);let t;
-    if(abMode===-2)t='Route permanente';
-    else if(tot>0){t=`${time<BAL.prep?'Planifier':'Envoyer'} ${tot}`;if(hover.owner!==player){const need=Math.ceil(hover.troops*defMult(hover)*(hover.owner==='N'?modOf(player,'neutralDef'):1)/atkMult(player)+0.01);t+=tot>need?` · prise (${need} requis)`:` · insuffisant (${need} requis)`;}else t+=' en renfort';}
+    if(abMode===-2)t=trad('Route permanente');
+    else if(tot>0){t=trad(time<BAL.prep?'Planifier {n}':'Envoyer {n}',{n:tot});if(hover.owner!==player){const need=Math.ceil(hover.troops*defMult(hover)*(hover.owner==='N'?modOf(player,'neutralDef'):1)/atkMult(player)+0.01);t+=' · '+trad(tot>need?'prise ({n} requis)':'insuffisant ({n} requis)',{n:need});}else t+=' '+trad('en renfort');}
     if(t){ctx.font=`700 15px ${FD}`;const w=ctx.measureText(t).width+12;ctx.fillStyle=abMode===-2?C.gold:OC[player];ctx.fillRect(x+hover.r*z+6,y-hover.r*z-22,w,20);ctx.fillStyle=C.ink;ctx.textAlign='left';ctx.textBaseline='middle';ctx.fillText(t,x+hover.r*z+12,y-hover.r*z-11);}
   }
   for(const s of squads){const a=nodes[s.path[s.seg]],b=nodes[s.path[s.seg+1]];const L=elen(a.i,b.i),t=Math.min(1,s.d/L);
@@ -1097,7 +1107,7 @@ function render(){
     if((!n.sup&&mine)||n.dis>0){ctx.setLineDash([3,3]);ctx.stroke();ctx.setLineDash([]);}else ctx.stroke();
     if(n.flash>0){shape(n,x,y,r);ctx.fillStyle=col;ctx.globalAlpha=n.flash*0.5;ctx.fill();ctx.globalAlpha=1;}
     if(TEAM&&n.owner===player&&!spectate){const k=secOf(n);if(k&&k!==mySec){const bx=x-r*0.85,by=y+r*0.85,br=Math.max(5,6*z);ctx.fillStyle=C.ink;ctx.strokeStyle=col;ctx.lineWidth=1.5;ctx.beginPath();ctx.arc(bx,by,br,0,Math.PI*2);ctx.fill();ctx.stroke();
-      ctx.fillStyle=col;ctx.font=`800 ${Math.round(br*1.35)}px ${FD}`;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(SECN[n.owner][k][0].toUpperCase(),bx,by+0.5);}}
+      ctx.fillStyle=col;ctx.font=`800 ${Math.round(br*1.35)}px ${FD}`;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(trad(SECN[n.owner][k])[0].toUpperCase(),bx,by+0.5);}}
     if(hover===n&&state==='play'){shape(n,x,y,r+3);ctx.strokeStyle=(abMode>=0&&!validTarget(player,abMode,n))||(abMode===-3&&n.type!=='bridge')?'rgba(232,227,216,0.25)':C.text;ctx.lineWidth=1.5;ctx.stroke();}
     ctx.fillStyle=n.owner==='N'?'#c9ccd0':col;ctx.font=`700 ${Math.round((n.type==='bridge'?11:14)*z)}px ${FD}`;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(Math.floor(n.troops),x,y+1);
     const bsz=9*z;
@@ -1124,13 +1134,13 @@ function label(n,x,y,col,size){const fs=Math.round(size*Math.max(0.85,Math.min(1
 /* ================= Interface ================= */
 const objsEl=$('objs');
 function setMapTexts(){
-  $('brandName').textContent=`Bataille de ${MAP.name}`;cv.setAttribute('aria-label',`Carte de ${MAP.name}`);
+  $('brandName').textContent=trad('Bataille de {ville}',{ville:MAP.name});cv.setAttribute('aria-label',trad('Carte de {ville}',{ville:MAP.name}));
   objsEl.innerHTML='';OBJ.forEach(id=>{const d=document.createElement('div');d.className='obj';d.id='o_'+id;const sp=document.createElement('span');sp.textContent=nodes[idx[id]].name;d.appendChild(document.createElement('i'));d.appendChild(sp);objsEl.appendChild(d);});
   $('arrList').innerHTML='';
 }
 function fmt(t){t=Math.max(0,Math.ceil(t));return String(Math.floor(t/60)).padStart(2,'0')+':'+String(t%60).padStart(2,'0');}
 const K=s=>`<span class="key">${s}</span>`;
-$('legend').innerHTML=['caserne','depot','fortin','mortier','bar'].map(k=>`<div>${iconSVG(k,1)}${iconSVG(k,2)}<span>${ST[k].n} : niv. 1, niv. 2</span></div>`).join('')+`<div>${iconSVG('pont',1)}<span>Pont en reconstruction</span></div>`;
+$('legend').innerHTML=['caserne','depot','fortin','mortier','bar'].map(k=>`<div>${iconSVG(k,1)}${iconSVG(k,2)}<span>${trad('{nom} : niv. 1, niv. 2',{nom:trad(ST[k].n)})}</span></div>`).join('')+`<div>${iconSVG('pont',1)}<span>${trad('Pont en reconstruction')}</span></div>`;
 $('rbIco').setAttribute('d',ICONS.pont[0].d);
 
 function hud(){
@@ -1138,34 +1148,34 @@ function hud(){
   const p=P[player];
   for(const id of OBJ)$('o_'+id).className='obj '+nodes[idx[id]].owner;
   const sub=$('clockSub');
-  if(time<BAL.prep){$('timer').textContent=fmt(BAL.prep-time);sub.textContent=paused?'En pause · préparation':'Préparation : construisez, recherchez';sub.className='clock-sub hot';}
+  if(time<BAL.prep){$('timer').textContent=fmt(BAL.prep-time);sub.textContent=trad(paused?'En pause · préparation':'Préparation : construisez, recherchez');sub.className='clock-sub hot';}
   else{$('timer').textContent=fmt(FMT.dur-time);
-    if(paused){sub.textContent='En pause · donnez vos ordres';sub.className='clock-sub hot';}
-    else if(truce>0){sub.textContent=`Cessez-le-feu : ${Math.ceil(truce)} s`;sub.className='clock-sub hot';}
-    else{sub.textContent=`Phase ${ROM[curPhase]} · ${PHN[curPhase]}`+(curPhase<3?` · ${ROM[curPhase+1]} dans ${fmt(phaseAt(curPhase+1)-time)}`:'');sub.className='clock-sub';}}
-  const pb=$('pauseBtn');pb.classList.toggle('on',paused);pb.querySelector('span').textContent=paused?'Reprendre':'Pause';
+    if(paused){sub.textContent=trad('En pause · donnez vos ordres');sub.className='clock-sub hot';}
+    else if(truce>0){sub.textContent=trad('Cessez-le-feu : {n} s',{n:Math.ceil(truce)});sub.className='clock-sub hot';}
+    else{sub.textContent=trad('Phase {num} · {nom}',{num:ROM[curPhase],nom:trad(PHN[curPhase])})+(curPhase<3?' · '+trad('{num} dans {temps}',{num:ROM[curPhase+1],temps:fmt(phaseAt(curPhase+1)-time)}):'');sub.className='clock-sub';}}
+  const pb=$('pauseBtn');pb.classList.toggle('on',paused);pb.querySelector('span').textContent=trad(paused?'Reprendre':'Pause');
   const stot=Math.max(1,P.A.score+P.B.score);for(const s of['A','B']){$('sb'+s).style.width=(P.A.score+P.B.score<1?0:100*P[s].score/stot)+'%';$('sv'+s).textContent=Math.floor(P[s].score);}
-  const ra=scoreRate('A'),rb=scoreRate('B');$('tgtTxt').textContent='Points de contrôle'+(time<BAL.prep?'':ra?` · attaquants +${fr(ra,1)}/s`:rb?` · défenseurs +${fr(rb,1)}/s`:' · égalité');
+  const ra=scoreRate('A'),rb=scoreRate('B');$('tgtTxt').textContent=trad('Points de contrôle')+(time<BAL.prep?'':' · '+(ra?trad('attaquants +{n}/s',{n:fr(ra,1)}):rb?trad('défenseurs +{n}/s',{n:fr(rb,1)}):trad('égalité')));
   let inc=0;for(const n of nodes)if(n.alive&&n.owner===player)inc+=incOf(n);const up=army[player]*BAL.upkeep*upkMult(player),net=inc+arrSum(player,'inc')-up;
   $('cr').textContent=Math.floor(Math.max(0,p.cr));const ie=$('inc');ie.textContent=`${net>=0?'+':'−'}${fr(Math.abs(net))}/s`;ie.className='inc'+(net<0?' neg':'');
-  $('upk').textContent=`Solde ${fr(up)}/s`;
-  {const sp=Math.round((supF(player)-1)*100);$('supv').textContent=`${Math.round(p.sup)} % · prod. ${sp>=0?'+':'−'}${Math.abs(sp)} %`;}$('supbar').style.width=p.sup+'%';
-  $('phv').textContent=time<BAL.prep?`Préparation · ${fmt(BAL.prep-time)}`:`${ROM[curPhase]} · ${PHN[curPhase]}`;
+  $('upk').textContent=trad('Solde {n}/s',{n:fr(up)});
+  {const sp=Math.round((supF(player)-1)*100);$('supv').textContent=trad('{n} % · prod. {pct} %',{n:Math.round(p.sup),pct:(sp>=0?'+':'−')+Math.abs(sp)});}$('supbar').style.width=p.sup+'%';
+  $('phv').textContent=time<BAL.prep?trad('Préparation · {temps}',{temps:fmt(BAL.prep-time)}):`${ROM[curPhase]} · ${trad(PHN[curPhase])}`;
   document.querySelectorAll('.phase i').forEach((e,i)=>e.classList.toggle('on',i<curPhase));
-  $('decv').textContent=decP[player]?'à prendre':fmt(Math.max(0,p.nextDec));
+  $('decv').textContent=decP[player]?trad('à prendre'):fmt(Math.max(0,p.nextDec));
   const chips=[];
-  if(p.cr<=0)chips.push('<span class="chip bad">Solde impayée : production −40 %</span>');
-  if(autoM[player]!=='off'&&!spectate)chips.push(`<span class="chip good">${autoM[player]==='def'?'Défense':'Attaque'} automatique</span>`);
-  if(autoB[player]&&!spectate)chips.push('<span class="chip good">Améliorations automatiques</span>');
+  if(p.cr<=0)chips.push(`<span class="chip bad">${trad('Solde impayée : production −40 %')}</span>`);
+  if(autoM[player]!=='off'&&!spectate)chips.push(`<span class="chip good">${trad(autoM[player]==='def'?'Défense automatique':'Attaque automatique')}</span>`);
+  if(autoB[player]&&!spectate)chips.push(`<span class="chip good">${trad('Améliorations automatiques')}</span>`);
   document.querySelectorAll('#autoSeg button').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.a===autoM[player])));$('autoBuildBtn').setAttribute('aria-pressed',String(!!autoB[player]));
   for(const m of mods){const forMe=m.s===player||m.s==='*';const onEnemy=m.s===enemyOf(player);if(!forMe&&!onEnemy)continue;if(m.stat==='paris'&&!forMe)continue;
-    const good=m.good?forMe:onEnemy;chips.push(`<span class="chip ${good?'good':'bad'}">${m.label}${onEnemy?' (ennemi)':''} ${Math.ceil(m.t)} s</span>`);}
-  if(p.perm.prod!==1)chips.push(`<span class="chip good">Production +${Math.round((p.perm.prod-1)*100)} %</span>`);
-  if(p.perm.inc!==1)chips.push(`<span class="chip bad">Ravitaillement −${Math.round((1-p.perm.inc)*100)} %</span>`);
-  if(p.perm.home!==1)chips.push('<span class="chip good">Quartiers fortifiés</span>');
-  if(wallCache[player])chips.push('<span class="chip good">Dos au mur : production +25 %, défense +15 %</span>');
-  if(stretchF[player]<0.99)chips.push(`<span class="chip bad">Lignes étirées : production −${Math.round((1-stretchF[player])*100)} %</span>`);
-  const cut=nodes.filter(n=>n.alive&&n.owner===player&&!n.sup).length;if(cut)chips.push(`<span class="chip bad">${cut} point${cut>1?'s':''} encerclé${cut>1?'s':''}</span>`);
+    const good=m.good?forMe:onEnemy;chips.push(`<span class="chip ${good?'good':'bad'}">${esc(tx(m.label))}${onEnemy?' '+trad('(ennemi)'):''} ${Math.ceil(m.t)} s</span>`);}
+  if(p.perm.prod!==1)chips.push(`<span class="chip good">${trad('Production +{n} %',{n:Math.round((p.perm.prod-1)*100)})}</span>`);
+  if(p.perm.inc!==1)chips.push(`<span class="chip bad">${trad('Ravitaillement −{n} %',{n:Math.round((1-p.perm.inc)*100)})}</span>`);
+  if(p.perm.home!==1)chips.push(`<span class="chip good">${trad('Quartiers fortifiés')}</span>`);
+  if(wallCache[player])chips.push(`<span class="chip good">${trad('Dos au mur : production +25 %, défense +15 %')}</span>`);
+  if(stretchF[player]<0.99)chips.push(`<span class="chip bad">${trad('Lignes étirées : production −{n} %',{n:Math.round((1-stretchF[player])*100)})}</span>`);
+  const cut=nodes.filter(n=>n.alive&&n.owner===player&&!n.sup).length;if(cut)chips.push(`<span class="chip bad">${trad(cut>1?'{n} points encerclés':'{n} point encerclé',{n:cut})}</span>`);
   $('chips').innerHTML=chips.join('');
   [...feedEl.children].forEach((d,i)=>{const f=(feeds[player]||feeds.A)[i];if(f&&time-f.t>20)d.style.opacity=0.45;});
   hudMode();updateOffer();updateMobile();updateAdv();updateDec();updateSel();updateArrList();updateAb();updateArsenal();updateCtx();updateTut();
@@ -1175,32 +1185,33 @@ function hud(){
 function updateCtx(){
   const c=$('ctx');if(state!=='play'){c.hidden=true;return;}c.hidden=false;
   if(abMode>=0){const a=ABL[player][abMode];c.className='ctx armed';
-    c.innerHTML={enemy:`${a.name} : cliquez un point ennemi ou neutre`,enemyOwned:`${a.name} : cliquez un point ennemi`,own:`${a.name} : cliquez un de vos points`,bridge:`${a.name} : cliquez un pont`}[a.target]+` · ${K('Échap')} annuler`;return;}
-  if(abMode===-2){c.className='ctx armed';c.innerHTML=`Route permanente : cliquez la destination · ${K('Échap')} annuler`;return;}
-  if(abMode===-3){c.className='ctx armed';c.innerHTML=`Dynamiter : cliquez le pont à détruire (${P[player].charges} charge${P[player].charges>1?'s':''}) · ${K('Échap')} annuler`;return;}
+    c.innerHTML=trad({enemy:'{nom} : cliquez un point ennemi ou neutre',enemyOwned:'{nom} : cliquez un point ennemi',own:'{nom} : cliquez un de vos points',bridge:'{nom} : cliquez un pont'}[a.target],{nom:trad(a.name)})+` · ${K(trad('Échap'))} ${trad('annuler')}`;return;}
+  if(abMode===-2){c.className='ctx armed';c.innerHTML=`${trad('Route permanente : cliquez la destination')} · ${K(trad('Échap'))} ${trad('annuler')}`;return;}
+  if(abMode===-3){c.className='ctx armed';c.innerHTML=`${trad(P[player].charges>1?'Dynamiter : cliquez le pont à détruire ({n} charges)':'Dynamiter : cliquez le pont à détruire ({n} charge)',{n:P[player].charges})} · ${K(trad('Échap'))} ${trad('annuler')}`;return;}
   c.className='ctx';
-  if(mode==='local'&&turn.phase==='exec'){c.innerHTML=`<b>Exécution de la manche ${turn.round}</b> · les plans des deux camps se jouent ensemble · ${K('Espace')} pause`;return;}
-  if(mode==='local'&&!sel.size&&turn.phase==='plan'){c.innerHTML=`<b>Manche ${turn.round}</b> · ordres des ${sideName(player,1)} · ${K('Clic gauche')} sélectionner un de vos points · ${K('Entrée')} terminer votre tour`;return;}
-  if(spectate){c.innerHTML=`<b>Simulation</b> · ${K('Espace')} pause · vitesse dans la barre du bas · ${K('V')} suivre l'autre camp · ${K('Glisser')} déplacer la carte`;return;}
-  const prep=time<BAL.prep?`<b>Préparation</b> : construisez et recherchez avant ${fmt(BAL.prep-time)} · `:'';
-  if(selDead>=0){c.innerHTML=`${prep}Pont détruit : reconstruisez-le depuis le panneau de gauche si vous tenez une rive`;return;}
-  if(!sel.size){c.innerHTML=`${prep}${K('Clic gauche')} sélectionner un de vos points · ${K('Glisser')} cadre · ${K('G')} QG · ${K('Espace')} pause`;return;}
+  const KS={esp:K(trad('Espace')),cg:K(trad('Clic gauche')),cd:K(trad('Clic droit')),ent:K(trad('Entrée')),gl:K(trad('Glisser')),v:K('V'),g:K('G'),x:K('X'),t:K('T'),q:`${K('1')}–${K('4')}`,b:`${K('C')}${K('D')}${K('F')}${K('M')}${K('B')}`};
+  if(mode==='local'&&turn.phase==='exec'){c.innerHTML=trad('<b>Exécution de la manche {n}</b> · les plans des deux camps se jouent ensemble · {esp} pause',{n:turn.round,esp:KS.esp});return;}
+  if(mode==='local'&&!sel.size&&turn.phase==='plan'){c.innerHTML=trad('<b>Manche {n}</b> · ordres des {camp} · {cg} sélectionner un de vos points · {ent} terminer votre tour',{n:turn.round,camp:trad(sideName(player,1)),cg:KS.cg,ent:KS.ent});return;}
+  if(spectate){c.innerHTML=trad("<b>Simulation</b> · {esp} pause · vitesse dans la barre du bas · {v} suivre l'autre camp · {gl} déplacer la carte",KS);return;}
+  const prep=time<BAL.prep?trad('<b>Préparation</b> : construisez et recherchez avant {temps}',{temps:fmt(BAL.prep-time)})+' · ':'';
+  if(selDead>=0){c.innerHTML=prep+trad('Pont détruit : reconstruisez-le depuis le panneau de gauche si vous tenez une rive');return;}
+  if(!sel.size){c.innerHTML=prep+trad('{cg} sélectionner un de vos points · {gl} cadre · {g} QG · {esp} pause',KS);return;}
   let tot=0;for(const i of sel)tot+=Math.floor(nodes[i].troops*ratio);
-  if(mode==='local'){c.innerHTML=`<b>Manche ${turn.round}</b> · ${K('Clic droit')} sur une cible : <b>planifier</b> une attaque de ${tot} soldats · ${K('X')} annuler le plan · ${K('Entrée')} terminer votre tour`;return;}
-  if(time<BAL.prep){c.innerHTML=`<b>Préparation</b> · ${K('Clic droit')} sur une cible : <b>planifier</b> une attaque de ${tot} soldats, lancée dans ${fmt(BAL.prep-time)} · ${K('X')} annuler le plan`;return;}
-  c.innerHTML=`${prep}${K('Clic droit')} sur une cible : envoyer <b>${tot}</b> soldats (${Math.round(ratio*100)} %) · ${K('1')}–${K('4')} quantité · ${K('T')} route permanente`+(sel.size===1?` · ${K('C')}${K('D')}${K('F')}${K('M')}${K('B')} construire`:'');
+  if(mode==='local'){c.innerHTML=trad('<b>Manche {n}</b> · {cd} sur une cible : <b>planifier</b> une attaque de {tot} soldats · {x} annuler le plan · {ent} terminer votre tour',Object.assign({n:turn.round,tot},KS));return;}
+  if(time<BAL.prep){c.innerHTML=trad('<b>Préparation</b> · {cd} sur une cible : <b>planifier</b> une attaque de {tot} soldats, lancée dans {temps} · {x} annuler le plan',Object.assign({tot,temps:fmt(BAL.prep-time)},KS));return;}
+  c.innerHTML=prep+trad('{cd} sur une cible : envoyer <b>{tot}</b> soldats ({pct} %) · {q} quantité · {t} route permanente',Object.assign({tot,pct:Math.round(ratio*100)},KS))+(sel.size===1?' · '+trad('{b} construire',KS):'');
 }
 /* sélection & construction */
 const BKEYS=['caserne','depot','fortin','mortier','bar'];
 const needToTake=(n,mult)=>Math.ceil(n.troops*defMult(n)*(mult||1)/atkMult(enemyOf(n.owner))+0.01);
 function buildEffect(n,k){
-  const lv=nextLvl(n,k);if(lv>=2)return ST[k].d[1];
+  const lv=nextLvl(n,k);if(lv>=2)return trad(ST[k].d[1]);
   switch(k){
-    case 'caserne':{const curM=active(n,'caserne')?STV.caserne.prod[n.lvl-1]:1,base=(prodOf(n)-(n.type==='base'?arrSum(n.owner,'qg'):0))/curM;return `+${fr(base*(STV.caserne.prod[lv]-curM),2)} soldat/s ici · ${capOf(n)} → ${n.cap+STV.caserne.cap[lv]} max`;}
-    case 'depot':{const ig=(STV.depot.inc[lv]-(lv?STV.depot.inc[0]:0))*incMult(n.owner);let nb=0;for(const j of adj[n.i]){const m=nodes[j];if(m.owner===n.owner)nb+=prodOf(m)*(STV.depot.adj[lv]-(lv?STV.depot.adj[0]:0));}return `+${fr(ig,2)} ravit./s · voisins +${fr(nb,2)} soldat/s`;}
-    case 'fortin':{const cur=active(n,'fortin')?STV.fortin.def[n.lvl-1]:1;return `Pour le prendre : ${needToTake(n)} → ${needToTake(n,STV.fortin.def[lv]/cur)} soldats`;}
-    case 'bar':{const cur=n.bar>0&&n.bbuild<=0?STV.bar.def[n.bar-1]:1;return `Pour le prendre : ${needToTake(n)} → ${needToTake(n,STV.bar.def[lv]/cur)} soldats`;}
-    case 'mortier':{const r=STV.mortier.dmg[lv]/STV.mortier.per[lv]*TV.art[P[n.owner].tech.art];return `Tue ${fr(r,1)} soldat/s ennemi à moins de 680 m`;}
+    case 'caserne':{const curM=active(n,'caserne')?STV.caserne.prod[n.lvl-1]:1,base=(prodOf(n)-(n.type==='base'?arrSum(n.owner,'qg'):0))/curM;return trad('+{n} soldat/s ici · {a} → {b} max',{n:fr(base*(STV.caserne.prod[lv]-curM),2),a:capOf(n),b:n.cap+STV.caserne.cap[lv]});}
+    case 'depot':{const ig=(STV.depot.inc[lv]-(lv?STV.depot.inc[0]:0))*incMult(n.owner);let nb=0;for(const j of adj[n.i]){const m=nodes[j];if(m.owner===n.owner)nb+=prodOf(m)*(STV.depot.adj[lv]-(lv?STV.depot.adj[0]:0));}return trad('+{a} ravit./s · voisins +{b} soldat/s',{a:fr(ig,2),b:fr(nb,2)});}
+    case 'fortin':{const cur=active(n,'fortin')?STV.fortin.def[n.lvl-1]:1;return trad('Pour le prendre : {a} → {b} soldats',{a:needToTake(n),b:needToTake(n,STV.fortin.def[lv]/cur)});}
+    case 'bar':{const cur=n.bar>0&&n.bbuild<=0?STV.bar.def[n.bar-1]:1;return trad('Pour le prendre : {a} → {b} soldats',{a:needToTake(n),b:needToTake(n,STV.bar.def[lv]/cur)});}
+    case 'mortier':{const r=STV.mortier.dmg[lv]/STV.mortier.per[lv]*TV.art[P[n.owner].tech.art];return trad('Tue {n} soldat/s ennemi à moins de 680 m',{n:fr(r,1)});}
   }
 }
 const bGrid=$('bGrid');
@@ -1210,34 +1221,34 @@ function updateSel(){
   const list=[...sel].map(i=>nodes[i]).filter(n=>n.alive&&n.owner===player);
   const note=$('sNote');note.className='mini';
   $('rebuildBox').hidden=true;bGrid.hidden=false;$('selActs').hidden=false;
-  if(selDead>=0){const n=nodes[selDead];bGrid.hidden=true;$('selActs').hidden=true;$('rebuildBox').hidden=false;$('sName').textContent=n.name;$('sSub').textContent='Détruit';
+  if(selDead>=0){const n=nodes[selDead];bGrid.hidden=true;$('selActs').hidden=true;$('rebuildBox').hidden=false;$('sName').textContent=n.name;$('sSub').textContent=trad('Détruit');
     const can=canRebuild(player,n),near=EDADJ[n.i].some(j=>nodes[j].alive&&nodes[j].owner===player);
-    $('rbText').textContent=n.rebuild?`Chantier en cours (${sideName(n.rebuild.s,1)}) : ${Math.ceil(n.rebuild.t)} s.`:near?`Reconstruction : ${rbCost(player)} de ravitaillement, ${rbTime(player)} s de chantier. Le pont vous appartiendra.`:'Il faut tenir un point sur une des deux rives pour reconstruire ce pont.';
-    $('rbLbl').textContent=`Reconstruire · ${rbCost(player)}`;$('rebuildBtn').disabled=!can;note.textContent='';return;}
+    $('rbText').textContent=n.rebuild?trad('Chantier en cours ({camp}) : {n} s.',{camp:trad(sideName(n.rebuild.s,1)),n:Math.ceil(n.rebuild.t)}):near?trad('Reconstruction : {c} de ravitaillement, {t} s de chantier. Le pont vous appartiendra.',{c:rbCost(player),t:rbTime(player)}):trad('Il faut tenir un point sur une des deux rives pour reconstruire ce pont.');
+    $('rbLbl').textContent=trad('Reconstruire · {c}',{c:rbCost(player)});$('rebuildBtn').disabled=!can;note.textContent='';return;}
   const n=list.length===1?list[0]:null;
   $('cedeBtn').hidden=!(TEAM&&n&&secOf(n)&&secOf(n)===mySec);
   const anyRally=list.some(m=>m.rally>=0);$('stopBtn').disabled=!anyRally;$('rallyBtn').disabled=!list.length;$('rallyBtn').classList.toggle('armed',abMode===-2);
-  if(!list.length){$('sName').textContent='Aucune sélection';$('sSub').textContent='';note.textContent='Cliquez un de vos points pour construire, ou un pont détruit pour le reconstruire.';}
-  else if(!n){const t=list.reduce((a,m)=>a+m.troops,0);$('sName').textContent=`${list.length} points`;$('sSub').textContent=`${Math.floor(t)} soldats`;note.textContent='Sélectionnez un seul point pour construire.';}
-  else{$('sName').textContent=n.name;$('sSub').textContent=n.st?`${ST[n.st].n} niv. ${n.lvl}${n.build>0?' · '+Math.ceil(n.build)+' s':''}`:`${Math.floor(n.troops)} soldats`;
-    if(!n.sup){note.textContent='Point encerclé : reliez-le à votre QG ou à un objectif pour construire.';note.className='mini warn';}
-    else if(n.rally>=0)note.textContent=`Route permanente vers ${nodes[n.rally].name}.`;
-    else note.textContent='Si le point tombe, l\'ennemi récupère le bâtiment au niveau 1.';}
+  if(!list.length){$('sName').textContent=trad('Aucune sélection');$('sSub').textContent='';note.textContent=trad('Cliquez un de vos points pour construire, ou un pont détruit pour le reconstruire.');}
+  else if(!n){const t=list.reduce((a,m)=>a+m.troops,0);$('sName').textContent=trad('{n} points',{n:list.length});$('sSub').textContent=trad('{n} soldats',{n:Math.floor(t)});note.textContent=trad('Sélectionnez un seul point pour construire.');}
+  else{$('sName').textContent=n.name;$('sSub').textContent=n.st?trad('{nom} niv. {lv}',{nom:trad(ST[n.st].n),lv:n.lvl})+(n.build>0?' · '+Math.ceil(n.build)+' s':''):trad('{n} soldats',{n:Math.floor(n.troops)});
+    if(!n.sup){note.textContent=trad('Point encerclé : reliez-le à votre QG ou à un objectif pour construire.');note.className='mini warn';}
+    else if(n.rally>=0)note.textContent=trad('Route permanente vers {nom}.',{nom:nodes[n.rally].name});
+    else note.textContent=trad("Si le point tombe, l'ennemi récupère le bâtiment au niveau 1.");}
   for(const k of BKEYS){const b=$('bo_'+k);
-    if(!n){b.querySelector('.iw').innerHTML=iconSVG(k,1);b.querySelector('b').textContent=ST[k].n;b.querySelector('.c').textContent=ST[k].c[0];
-      b.querySelector('small').textContent=curPhase<ST[k].ph[0]?`Phase ${ROM[ST[k].ph[0]]}`:ST[k].d[0];b.disabled=true;continue;}
+    if(!n){b.querySelector('.iw').innerHTML=iconSVG(k,1);b.querySelector('b').textContent=trad(ST[k].n);b.querySelector('.c').textContent=ST[k].c[0];
+      b.querySelector('small').textContent=curPhase<ST[k].ph[0]?trad('Phase {num}',{num:ROM[ST[k].ph[0]]}):trad(ST[k].d[0]);b.disabled=true;continue;}
     const c=buildCost(n,k),lv=nextLvl(n,k),noB=ST[k].noBridge&&n.type==='bridge',other=k!=='bar'&&n.st&&n.st!==k,ph=buildPhase(n,k);
     b.querySelector('.iw').innerHTML=iconSVG(k,Math.min(2,lv+1));
-    b.querySelector('b').textContent=(lv===1?'Améliorer ':'')+ST[k].n+(lv>=2?' (max)':'');
+    b.querySelector('b').textContent=lv===1?trad('Améliorer {nom}',{nom:trad(ST[k].n)}):trad(ST[k].n)+(lv>=2?' '+trad('(max)'):'');
     b.querySelector('.c').textContent=c==null||noB?'—':`${c} · ${ST[k].t[Math.min(lv,1)]} s`;
-    b.querySelector('small').textContent=noB?'Impossible sur un pont':other?'Un seul bâtiment par point':lv>=2?'Niveau maximal':(ph&&curPhase<ph)?`Débloqué en phase ${ROM[ph]}`:buildEffect(n,k);
+    b.querySelector('small').textContent=noB?trad('Impossible sur un pont'):other?trad('Un seul bâtiment par point'):lv>=2?trad('Niveau maximal'):(ph&&curPhase<ph)?trad('Débloqué en phase {num}',{num:ROM[ph]}):buildEffect(n,k);
     b.disabled=!canBuild(player,n,k);}
 }
 $('rebuildBtn').onclick=()=>{if(spectate)return;if(selDead>=0&&canRebuild(player,nodes[selDead])){act('rebuild',{n:selDead});hud();}};
 /* décisions */
 function updateDec(){const card=$('decCard'),dp=decP[player];if(!dp||spectate){card.hidden=true;return;}card.hidden=false;$('decT').textContent=`${Math.ceil(dp.t)} s`;
   const box=$('decOpts');if(box.dataset.k!==dp.ids.join()){box.dataset.k=dp.ids.join();box.innerHTML='';
-    for(const id of dp.ids){const d=DECS[player].find(x=>x.id===id);if(!d)continue;const b=document.createElement('button');b.className='decopt';b.innerHTML=`<b>${d.title}</b><span>${d.text}</span>`;
+    for(const id of dp.ids){const d=DECS[player].find(x=>x.id===id);if(!d)continue;const b=document.createElement('button');b.className='decopt';b.innerHTML=`<b>${trad(d.title)}</b><span>${trad(d.text)}</span>`;
       b.onclick=()=>{if(!decP[player])return;act('dec',{id});if(NET.role==='guest'){decP[player]=null;}hud();};box.appendChild(b);}}}
 $('decSkip').onclick=()=>{act('decskip',{});if(NET.role==='guest')decP[player]=null;hud();};
 /* conseiller */
@@ -1245,101 +1256,101 @@ let advNode=-1;
 function advice(){
   const p=P[player],me=player,q=qgOf(me),eq=qgOf(enemyOf(me));
   if(time<BAL.prep){
-    if(!p.built&&p.cr>=60)return{t:`Préparation : investissez. Une caserne ${K('C')} sur votre QG produit nettement plus de soldats.`,n:q};
-    if(!p.res&&p.cr>=70)return{t:'Lancez une recherche dans l\'Arsenal (à droite) : elle avancera pendant la préparation.'};
-    const pl=planned.filter(x=>x.s===me).length;if(!pl)return{t:`Planifiez votre première attaque : sélectionnez le QG (${K('G')}) puis faites un clic droit sur un point voisin.`,n:q};
-    return{t:`Plan prêt (${pl} attaque${pl>1?'s':''}). Ajoutez-en ou attendez la fin du compte à rebours.`};}
+    if(!p.built&&p.cr>=60)return{t:trad('Préparation : investissez. Une caserne {k} sur votre QG produit nettement plus de soldats.',{k:K('C')}),n:q};
+    if(!p.res&&p.cr>=70)return{t:trad("Lancez une recherche dans l'Arsenal (à droite) : elle avancera pendant la préparation.")};
+    const pl=planned.filter(x=>x.s===me).length;if(!pl)return{t:trad('Planifiez votre première attaque : sélectionnez le QG ({k}) puis faites un clic droit sur un point voisin.',{k:K('G')}),n:q};
+    return{t:trad(pl>1?'Plan prêt ({n} attaques). Ajoutez-en ou attendez la fin du compte à rebours.':'Plan prêt ({n} attaque). Ajoutez-en ou attendez la fin du compte à rebours.',{n:pl})};}
   const[incE]=incoming(me);let worst=null,wv=0;
   for(const n of nodes){if(n.owner!==me||!n.alive)continue;const r=incE[n.i]-n.troops*defMult(n);const imp=n.type==='base'?3:isObj(n)?2:1;if(r>0&&r*imp>wv){wv=r*imp;worst=n;}}
-  if(worst)return{t:`${worst.name} va tomber : ${Math.round(incE[worst.i])} assaillants en route. Envoyez des renforts ou utilisez une capacité défensive.`,n:worst};
-  if(p.cr<=0)return{t:'Solde impayée : votre armée coûte plus que vos revenus. Prenez des points, construisez un dépôt ou attaquez avec vos troupes.'};
-  const u=ABL[me].findIndex((a,i)=>canUnlock(me,i));if(u>=0)return{t:`Vous avez ${p.pc} PC : débloquez « ${ABL[me][u].name} » dans le panneau Capacités.`};
-  for(let i=0;i<ARR.length;i++){const a=ARR[i];if(arrOwn[i]===me)continue;const mine=a.ix.filter(k=>nodes[k].owner===me).length;if(mine===a.ix.length-1){const miss=nodes[a.ix.find(k=>nodes[k].owner!==me)];return{t:`Prenez ${miss.name} pour tenir tout l'arrondissement ${a.n} : ${a.d}.`,n:miss};}}
-  for(let i=0;i<ARR.length;i++){if(arrOwn[i]===enemyOf(me)&&ARR[i].side!==enemyOf(me)){const a=ARR[i];return{t:`L'ennemi tient tout l'arrondissement ${a.n}. Prenez-lui un seul point pour lui retirer son bonus.`,n:nodes[a.ix[0]]};}}
-  if(!p.res&&!autoB[me]){const k=Object.keys(TECH).find(k=>techAvail(k,p.tech[k])&&p.cr>=TECH[k].lv[p.tech[k]].c);if(k)return{t:`Recherche possible : ${TECH[k].lv[p.tech[k]].n} (${TECH[k].lv[p.tech[k]].d}).`};}
-  if(p.cr>=180&&!autoB[me])return{t:`${Math.floor(p.cr)} de ravitaillement dort : construisez, ou laissez faire les améliorations automatiques (${K('U')}).`};
-  if(objHeld(me)<2)return{t:'Visez les objectifs dorés du centre : ils ravitaillent vos lignes et rapportent des points de contrôle.'};
-  return{t:`Préparez l'assaut final : massez vos troupes près de ${eq.name}, le QG adverse, et frappez avec plusieurs points à la fois.`,n:eq};
+  if(worst)return{t:trad('{nom} va tomber : {n} assaillants en route. Envoyez des renforts ou utilisez une capacité défensive.',{nom:esc(worst.name),n:Math.round(incE[worst.i])}),n:worst};
+  if(p.cr<=0)return{t:trad('Solde impayée : votre armée coûte plus que vos revenus. Prenez des points, construisez un dépôt ou attaquez avec vos troupes.')};
+  const u=ABL[me].findIndex((a,i)=>canUnlock(me,i));if(u>=0)return{t:trad('Vous avez {n} PC : débloquez « {nom} » dans le panneau Capacités.',{n:p.pc,nom:trad(ABL[me][u].name)})};
+  for(let i=0;i<ARR.length;i++){const a=ARR[i];if(arrOwn[i]===me)continue;const mine=a.ix.filter(k=>nodes[k].owner===me).length;if(mine===a.ix.length-1){const miss=nodes[a.ix.find(k=>nodes[k].owner!==me)];return{t:trad("Prenez {nom} pour tenir tout l'arrondissement {arr} : {bonus}.",{nom:esc(miss.name),arr:esc(trad(a.n)),bonus:trad(a.d)}),n:miss};}}
+  for(let i=0;i<ARR.length;i++){if(arrOwn[i]===enemyOf(me)&&ARR[i].side!==enemyOf(me)){const a=ARR[i];return{t:trad("L'ennemi tient tout l'arrondissement {arr}. Prenez-lui un seul point pour lui retirer son bonus.",{arr:esc(trad(a.n))}),n:nodes[a.ix[0]]};}}
+  if(!p.res&&!autoB[me]){const k=Object.keys(TECH).find(k=>techAvail(k,p.tech[k])&&p.cr>=TECH[k].lv[p.tech[k]].c);if(k)return{t:trad('Recherche possible : {nom} ({effet}).',{nom:trad(TECH[k].lv[p.tech[k]].n),effet:trad(TECH[k].lv[p.tech[k]].d)})};}
+  if(p.cr>=180&&!autoB[me])return{t:trad('{n} de ravitaillement dort : construisez, ou laissez faire les améliorations automatiques ({k}).',{n:Math.floor(p.cr),k:K('U')})};
+  if(objHeld(me)<2)return{t:trad('Visez les objectifs dorés du centre : ils ravitaillent vos lignes et rapportent des points de contrôle.')};
+  return{t:trad("Préparez l'assaut final : massez vos troupes près de {nom}, le QG adverse, et frappez avec plusieurs points à la fois.",{nom:esc(eq.name)}),n:eq};
 }
 function updateAdv(){if(spectate)return;const a=advice();$('advText').innerHTML=a.t;advNode=a.n?a.n.i:-1;$('advGo').hidden=advNode<0;}
 $('advGo').onclick=()=>{if(advNode>=0)centerOn(nodes[advNode]);};
 /* arrondissements */
-function updateArrList(){const box=$('arrList');if(!ARR.length){if(!box.children.length)box.innerHTML='<span class="arr-b">Pas d\'arrondissement sur cette carte.</span>';return;}if(!box.children.length)box.innerHTML=ARR.map((a,i)=>`<div class="arr" id="arr_${i}"><div class="arr-top"><b>${a.n}</b><span></span></div><span class="arr-b">${a.d}</span><div class="arr-pips">${a.ix.map(()=>'<i></i>').join('')}</div></div>`).join('');
+function updateArrList(){const box=$('arrList');if(!ARR.length){if(!box.children.length)box.innerHTML=`<span class="arr-b">${trad("Pas d'arrondissement sur cette carte.")}</span>`;return;}if(!box.children.length)box.innerHTML=ARR.map((a,i)=>`<div class="arr" id="arr_${i}"><div class="arr-top"><b>${esc(trad(a.n))}</b><span></span></div><span class="arr-b">${trad(a.d)}</span><div class="arr-pips">${a.ix.map(()=>'<i></i>').join('')}</div></div>`).join('');
   ARR.forEach((a,i)=>{const el=$('arr_'+i),o=arrOwn[i];el.className='arr'+(o?' '+o:'');const cA=a.ix.filter(k=>nodes[k].owner==='A').length,cB=a.ix.filter(k=>nodes[k].owner==='B').length;
-    el.querySelector('.arr-top span').textContent=o?`${sideName(o)} · bonus actif`:`${cA?cA+' att. · ':''}${cB?cB+' déf. · ':''}${a.ix.length} points`;
+    el.querySelector('.arr-top span').textContent=o?trad('{camp} · bonus actif',{camp:trad(sideName(o))}):`${cA?trad('{n} att.',{n:cA})+' · ':''}${cB?trad('{n} déf.',{n:cB})+' · ':''}${trad('{n} points',{n:a.ix.length})}`;
     el.querySelectorAll('.arr-pips i').forEach((p,k)=>{p.className=nodes[a.ix[k]].owner==='A'?'A':nodes[a.ix[k]].owner==='B'?'B':'';});});}
 /* capacités */
 function buildAbList(){const box=$('abList');box.innerHTML='';
   const dd=document.createElement('div');dd.className='abc';dd.id='abc_dyn';
-  dd.innerHTML=`<div class="abc-top"><b>Dynamiter un pont</b><span class="key">P</span></div><span class="abc-d">Détruit le pont de votre choix, sur n'importe quelle rive. 2 charges par partie.</span><div class="abc-act"><button class="btn sm"></button><span class="abc-s"></span></div>`;
+  dd.innerHTML=`<div class="abc-top"><b>${trad('Dynamiter un pont')}</b><span class="key">P</span></div><span class="abc-d">${trad("Détruit le pont de votre choix, sur n'importe quelle rive. 2 charges par partie.")}</span><div class="abc-act"><button class="btn sm"></button><span class="abc-s"></span></div>`;
   dd.querySelector('button').onclick=()=>{if(!spectate)setAbMode(-3);};box.appendChild(dd);
   ABL[player].forEach((a,i)=>{const d=document.createElement('div');d.className='abc';d.id='abc_'+i;
-    d.innerHTML=`<div class="abc-top"><b>${a.name}</b><span class="key">${i+5}</span></div><span class="abc-d">${a.desc}</span><div class="abc-act"><button class="btn sm"></button><span class="abc-s"></span></div><i class="cd"></i>`;
+    d.innerHTML=`<div class="abc-top"><b>${trad(a.name)}</b><span class="key">${i+5}</span></div><span class="abc-d">${trad(a.desc)}</span><div class="abc-act"><button class="btn sm"></button><span class="abc-s"></span></div><i class="cd"></i>`;
     d.querySelector('button').onclick=()=>{if(spectate)return;const st=P[player].ab[a.key];if(!st.u){if(canUnlock(player,i)){act('unlock',{i});hud();}}else setAbMode(i);};box.appendChild(d);});}
-function updateAb(){const p=P[player];$('pcv').textContent=`${p.pc} PC`;
-  {const d=$('abc_dyn');if(d){const blk=dynBlock(player);d.classList.toggle('armed',abMode===-3);const b=d.querySelector('button');b.textContent=abMode===-3?'Annuler':'Viser un pont';b.disabled=!!blk&&abMode!==-3;
-    d.querySelector('.abc-s').textContent=(blk&&p.charges>0&&time>=BAL.prep?blk+' · ':'')+`${p.charges} charge${p.charges>1?'s':''}`;}}
+function updateAb(){const p=P[player];$('pcv').textContent=trad('{n} PC',{n:p.pc});
+  {const d=$('abc_dyn');if(d){const blk=dynBlock(player);d.classList.toggle('armed',abMode===-3);const b=d.querySelector('button');b.textContent=trad(abMode===-3?'Annuler':'Viser un pont');b.disabled=!!blk&&abMode!==-3;
+    d.querySelector('.abc-s').textContent=(blk&&p.charges>0&&time>=BAL.prep?blk+' · ':'')+trad(p.charges>1?'{n} charges':'{n} charge',{n:p.charges});}}
   ABL[player].forEach((a,i)=>{const d=$('abc_'+i);if(!d)return;const st=p.ab[a.key],b=d.querySelector('button'),s=d.querySelector('.abc-s');
     d.classList.toggle('locked',!st.u);d.classList.toggle('armed',abMode===i);
-    if(!st.u){b.textContent=`Débloquer · ${a.cost} PC`;b.disabled=!canUnlock(player,i);s.textContent=curPhase<a.ph?`Phase ${ROM[a.ph]}`:p.pc<a.cost?`${a.cost-p.pc} PC manquant${a.cost-p.pc>1?'s':''}`:'';d.querySelector('.cd').style.width='0';}
-    else{const blk=abBlock(player,i);b.textContent=abMode===i?'Annuler':'Utiliser';b.disabled=!abReady(player,i)&&abMode!==i;s.textContent=st.cd>0?`Prête dans ${Math.ceil(st.cd)} s`:(blk||'Prête');
+    if(!st.u){b.textContent=trad('Débloquer · {n} PC',{n:a.cost});b.disabled=!canUnlock(player,i);s.textContent=curPhase<a.ph?trad('Phase {num}',{num:ROM[a.ph]}):p.pc<a.cost?trad(a.cost-p.pc>1?'{n} PC manquants':'{n} PC manquant',{n:a.cost-p.pc}):'';d.querySelector('.cd').style.width='0';}
+    else{const blk=abBlock(player,i);b.textContent=trad(abMode===i?'Annuler':'Utiliser');b.disabled=!abReady(player,i)&&abMode!==i;s.textContent=st.cd>0?trad('Prête dans {n} s',{n:Math.ceil(st.cd)}):(blk||trad('Prête'));
       d.querySelector('.cd').style.width=st.cd>0?(100*(1-st.cd/a.cd))+'%':'0';}});}
 /* arsenal */
 function buildArsenal(){const t=$('tracks');t.innerHTML='';
   for(const k in TECH){const d=document.createElement('div');d.className='track';d.id='tr_'+k;
-    d.innerHTML=`<div class="track-top"><span class="lbl">${TECH[k].n}</span><span class="pips"><i></i><i></i></span></div><p></p><div class="prog" hidden><i></i></div><button class="btn sm gold"></button>`;
+    d.innerHTML=`<div class="track-top"><span class="lbl">${trad(TECH[k].n)}</span><span class="pips"><i></i><i></i></span></div><p></p><div class="prog" hidden><i></i></div><button class="btn sm gold"></button>`;
     d.querySelector('button').onclick=()=>{if(spectate)return;act('res',{k});hud();};t.appendChild(d);}}
 function techEffect(k,lv){const p=P[player];
   switch(k){
-    case 'rec':{let tot=0;for(const n of nodes)if(n.owner===player)tot+=prodOf(n);return `+${fr(tot*(TV.rec[lv+1]/TV.rec[lv]-1),1)} soldat/s sur l'ensemble de vos points`;}
-    case 'arm':return `100 de vos soldats en valent ${Math.round(100*TV.arm[lv+1])} à l'attaque (au lieu de ${Math.round(100*TV.arm[lv])})`;
-    case 'pro':return `une garnison de 50 en vaut ${Math.round(50*TV.pro[lv+1])} en défense (au lieu de ${Math.round(50*TV.pro[lv])})`;
-    case 'log':{const ref=idx[MAP.ref]!=null?nodes[idx[MAP.ref]]:qgOf(enemyOf(player));const pa=path(qgOf(player).i,ref.i);let L=0;if(pa)for(let i=0;i<pa.length-1;i++)L+=elen(pa[i],pa[i+1]);const v0=BAL.speed*TV.log[lv]*p.perk.speed,v1=BAL.speed*TV.log[lv+1]*p.perk.speed;return `trajet QG → ${ref.name} : ${Math.round(L/v0)} s → ${Math.round(L/v1)} s`+(lv===1?', ravitaillement +10 %':'');}
-    case 'art':return `chaque mortier tue ${fr(STV.mortier.dmg[0]/STV.mortier.per[0]*TV.art[lv],1)} → ${fr(STV.mortier.dmg[0]/STV.mortier.per[0]*TV.art[lv+1],1)} soldat/s`+(lv===1?', portée +25 %, bombardement 50 %':'');
-  }return TECH[k].lv[lv].d;}
+    case 'rec':{let tot=0;for(const n of nodes)if(n.owner===player)tot+=prodOf(n);return trad("+{n} soldat/s sur l'ensemble de vos points",{n:fr(tot*(TV.rec[lv+1]/TV.rec[lv]-1),1)});}
+    case 'arm':return trad("100 de vos soldats en valent {a} à l'attaque (au lieu de {b})",{a:Math.round(100*TV.arm[lv+1]),b:Math.round(100*TV.arm[lv])});
+    case 'pro':return trad('une garnison de 50 en vaut {a} en défense (au lieu de {b})',{a:Math.round(50*TV.pro[lv+1]),b:Math.round(50*TV.pro[lv])});
+    case 'log':{const ref=idx[MAP.ref]!=null?nodes[idx[MAP.ref]]:qgOf(enemyOf(player));const pa=path(qgOf(player).i,ref.i);let L=0;if(pa)for(let i=0;i<pa.length-1;i++)L+=elen(pa[i],pa[i+1]);const v0=BAL.speed*TV.log[lv]*p.perk.speed,v1=BAL.speed*TV.log[lv+1]*p.perk.speed;return trad('trajet QG → {nom} : {a} s → {b} s',{nom:esc(ref.name),a:Math.round(L/v0),b:Math.round(L/v1)})+(lv===1?', '+trad('ravitaillement +10 %'):'');}
+    case 'art':return trad('chaque mortier tue {a} → {b} soldat/s',{a:fr(STV.mortier.dmg[0]/STV.mortier.per[0]*TV.art[lv],1),b:fr(STV.mortier.dmg[0]/STV.mortier.per[0]*TV.art[lv+1],1)})+(lv===1?', '+trad('portée +25 %, bombardement 50 %'):'');
+  }return trad(TECH[k].lv[lv].d);}
 function updateArsenal(){const p=P[player];
-  $('resHead').textContent=p.res?`${TECH[p.res.k].lv[p.tech[p.res.k]].n} · ${Math.ceil(p.res.t)} s`:'Aucune recherche';
+  $('resHead').textContent=p.res?`${trad(TECH[p.res.k].lv[p.tech[p.res.k]].n)} · ${Math.ceil(p.res.t)} s`:trad('Aucune recherche');
   for(const k in TECH){const d=$('tr_'+k),lv=p.tech[k];d.querySelectorAll('.pips i').forEach((e,i)=>e.classList.toggle('on',i<lv));
     const nx=TECH[k].lv[lv];const run=p.res&&p.res.k===k;
-    d.querySelector('p').innerHTML=lv>=2?`<b>${TECH[k].lv[1].n}</b> acquis · ${TECH[k].lv[1].d}`:`<b>${nx.n}</b> · ${techEffect(k,lv)}`;
+    d.querySelector('p').innerHTML=lv>=2?trad('<b>{nom}</b> acquis · {effet}',{nom:trad(TECH[k].lv[1].n),effet:trad(TECH[k].lv[1].d)}):`<b>${trad(nx.n)}</b> · ${techEffect(k,lv)}`;
     const pr=d.querySelector('.prog');pr.hidden=!run;if(run)pr.firstChild.style.width=(100*(1-p.res.t/p.res.T))+'%';
     const b=d.querySelector('button');b.hidden=lv>=2||run;
-    if(lv<2&&!run){const lock=curPhase<nx.ph;b.textContent=lock?`Phase ${ROM[nx.ph]}`:`Rechercher · ${nx.c} · ${nx.t} s`;b.disabled=lock||!!p.res||p.cr<nx.c;}}}
+    if(lv<2&&!run){const lock=curPhase<nx.ph;b.textContent=lock?trad('Phase {num}',{num:ROM[nx.ph]}):trad('Rechercher · {c} · {t} s',{c:nx.c,t:nx.t});b.disabled=lock||!!p.res||p.cr<nx.c;}}}
 
 /* ---------- Tutoriel ---------- */
 const tutFlag={};
 const TUT=[
-  {t:()=>`Préparation : 75 s et 150 de ravitaillement. Votre QG (le grand carré) est sélectionné : construisez une caserne ${K('C')} ou des barricades ${K('B')} dans le panneau de gauche.`,ok:()=>tutFlag.built},
-  {t:()=>'Lancez une recherche dans l\'Arsenal, à droite : Conscription ou Camions par exemple.',ok:()=>tutFlag.research},
-  {t:()=>`Planifiez votre première attaque : QG sélectionné (${K('G')}), faites un clic droit sur un point voisin. Elle partira seule à la fin de la préparation.`,ok:()=>tutFlag.sent||P[player].caps>=1},
-  {t:()=>'Prenez un point : le chiffre affiché au survol dit combien de soldats il faut. Visez ensuite les objectifs dorés du centre.',ok:()=>P[player].caps>=1},
-  {t:()=>'Tenez un objectif doré : il ravitaille vos lignes. Tenir tout un arrondissement (panneau de droite) donne un bonus.',ok:()=>objHeld(player)>=1},
-  {t:()=>`Route permanente : sélectionnez votre QG, appuyez sur ${K('T')} et cliquez un point du front. Il recevra des renforts en continu.`,ok:()=>tutFlag.rally},
-  {t:()=>'Dès que vous avez 1 PC (toutes les 100 s, à chaque prise d\'objectif ou phase), débloquez une capacité dans le panneau de droite.',ok:()=>tutFlag.unlock},
-  {t:()=>`Utilisez ${K('Espace')} pour mettre en pause : vous pouvez toujours donner vos ordres. Bonne bataille !`,ok:()=>false,last:1}
+  {t:()=>trad('Préparation : 75 s et 150 de ravitaillement. Votre QG (le grand carré) est sélectionné : construisez une caserne {c} ou des barricades {b} dans le panneau de gauche.',{c:K('C'),b:K('B')}),ok:()=>tutFlag.built},
+  {t:()=>trad("Lancez une recherche dans l'Arsenal, à droite : Conscription ou Camions par exemple."),ok:()=>tutFlag.research},
+  {t:()=>trad('Planifiez votre première attaque : QG sélectionné ({k}), faites un clic droit sur un point voisin. Elle partira seule à la fin de la préparation.',{k:K('G')}),ok:()=>tutFlag.sent||P[player].caps>=1},
+  {t:()=>trad('Prenez un point : le chiffre affiché au survol dit combien de soldats il faut. Visez ensuite les objectifs dorés du centre.'),ok:()=>P[player].caps>=1},
+  {t:()=>trad('Tenez un objectif doré : il ravitaille vos lignes. Tenir tout un arrondissement (panneau de droite) donne un bonus.'),ok:()=>objHeld(player)>=1},
+  {t:()=>trad('Route permanente : sélectionnez votre QG, appuyez sur {k} et cliquez un point du front. Il recevra des renforts en continu.',{k:K('T')}),ok:()=>tutFlag.rally},
+  {t:()=>trad("Dès que vous avez 1 PC (toutes les 100 s, à chaque prise d'objectif ou phase), débloquez une capacité dans le panneau de droite."),ok:()=>tutFlag.unlock},
+  {t:()=>trad('Utilisez {k} pour mettre en pause : vous pouvez toujours donner vos ordres. Bonne bataille !',{k:K(trad('Espace'))}),ok:()=>false,last:1}
 ];
 function updateTut(){const el=$('tut');if(tut<0){el.hidden=true;return;}el.hidden=false;
   while(tut>=0&&tut<TUT.length&&TUT[tut].ok())tut++;if(tut>=TUT.length){tut=-1;el.hidden=true;return;}
-  $('tutStep').textContent=`Tutoriel · ${tut+1}/${TUT.length}`;$('tutText').innerHTML=TUT[tut].t();$('tutSkip').textContent=TUT[tut].last?'Fermer':'Passer';}
+  $('tutStep').textContent=trad('Tutoriel · {n}/{t}',{n:tut+1,t:TUT.length});$('tutText').innerHTML=TUT[tut].t();$('tutSkip').textContent=trad(TUT[tut].last?'Fermer':'Passer');}
 $('tutSkip').onclick=()=>{tut=-1;$('tut').hidden=true;};
 
 /* ---------- Infobulle ---------- */
 const tip=$('tip');
 function updateTip(){
   if(!hover||state!=='play'||(compact&&sheet)){tip.hidden=true;return;}
-  const n=hover;const own={A:'Attaquants',B:'Défenseurs',N:'Neutre (milice)',X:'Détruit'}[n.owner];
-  let kind=n.type==='bridge'?`${/^(Tunnel|Ferry)/.test(n.name)?'Passage':'Pont'} ${deOf(n.river)}`:TYPES[n.type].label;if(isObj(n))kind='Objectif central'+(n.gare?' · gare':'');if(n.hill)kind+=' · colline';
+  const n=hover;const own=trad({A:'Attaquants',B:'Défenseurs',N:'Neutre (milice)',X:'Détruit'}[n.owner]);
+  let kind=n.type==='bridge'?trad(/^(Tunnel|Ferry)/.test(n.name)?'Passage {de}':'Pont {de}',{de:deOf(n.river),riviere:n.river}):trad(TYPES[n.type].label);if(isObj(n))kind=trad(n.gare?'Objectif central · gare':'Objectif central');if(n.hill)kind+=' · '+trad('colline');
   const mine=mineN(n);
-  const rows=n.alive?[['Camp',own],['Garnison',`${Math.floor(n.troops)} / ${capOf(n)}`],['Pour le prendre',mine?`${needToTake(n)} soldats ennemis`:`${Math.ceil(n.troops*defMult(n)*(n.owner==='N'?modOf(player,'neutralDef'):1)/atkMult(player)+0.01)} soldats`],
-    ['Soldats produits',mine?fr(prodOf(n),2)+' /s':'—'],['Ravitaillement',mine?fr(incOf(n),2)+' /s':'—']]:[['État',n.rebuild?`En reconstruction · ${Math.ceil(n.rebuild.t)} s`:'Pont détruit']];
-  if(n.st)rows.push(['Bâtiment',`${ST[n.st].n} niv. ${n.lvl}${n.build>0?' (chantier)':''}`]);
-  if(n.bar)rows.push(['Barricades',`niveau ${n.bar}${n.bbuild>0?' (chantier)':''}`]);
-  if(n.arr>=0)rows.push(['Arrondissement',ARR[n.arr].n]);
-  if(TEAM&&mine){const k=secOf(n);rows.push(['Secteur',!k?'commun (QG)':`${SECN[n.owner][k]}${n.owner===player?(k===mySec?' · le vôtre':' · allié'):''}`]);}
-  const ex=[];if(mine&&!n.sup)ex.push('<div class="warn">Encerclé : ne produit plus, défense −20 %</div>');if(n.sab>0)ex.push(`<div class="warn">Saboté : ${Math.ceil(n.sab)} s</div>`);
-  if(n.dis>0)ex.push('<div class="warn">Désorganisé</div>');if(occupied(n))ex.push('<div class="k">Occupé : production −40 %</div>');if(n.hold>0)ex.push('<div class="k">Tient la position (défense ×1,6)</div>');
-  if(n.collapse>0)ex.push(`<div class="warn">S'effondre dans ${Math.ceil(n.collapse)} s</div>`);if(!n.alive&&!n.rebuild)ex.push('<div class="k">Cliquez-le pour le reconstruire</div>');
-  tip.innerHTML=`<h4>${n.name}</h4><div class="k">${kind}</div>`+rows.map(([k,v])=>`<div class="row"><span class="k">${k}</span><span>${v}</span></div>`).join('')+ex.join('');
+  const rows=n.alive?[[trad('Camp'),own],[trad('Garnison'),`${Math.floor(n.troops)} / ${capOf(n)}`],[trad('Pour le prendre'),mine?trad('{n} soldats ennemis',{n:needToTake(n)}):trad('{n} soldats',{n:Math.ceil(n.troops*defMult(n)*(n.owner==='N'?modOf(player,'neutralDef'):1)/atkMult(player)+0.01)})],
+    [trad('Soldats produits'),mine?fr(prodOf(n),2)+' /s':'—'],[trad('Ravitaillement'),mine?fr(incOf(n),2)+' /s':'—']]:[[trad('État'),n.rebuild?trad('En reconstruction · {n} s',{n:Math.ceil(n.rebuild.t)}):trad('Pont détruit')]];
+  if(n.st)rows.push([trad('Bâtiment'),trad('{nom} niv. {lv}',{nom:trad(ST[n.st].n),lv:n.lvl})+(n.build>0?' '+trad('(chantier)'):'')]);
+  if(n.bar)rows.push([trad('Barricades'),trad('niveau {n}',{n:n.bar})+(n.bbuild>0?' '+trad('(chantier)'):'')]);
+  if(n.arr>=0)rows.push([trad('Arrondissement'),esc(trad(ARR[n.arr].n))]);
+  if(TEAM&&mine){const k=secOf(n);rows.push([trad('Secteur'),!k?trad('commun (QG)'):trad(SECN[n.owner][k])+(n.owner===player?' · '+trad(k===mySec?'le vôtre':'allié'):'')]);}
+  const ex=[];if(mine&&!n.sup)ex.push(`<div class="warn">${trad('Encerclé : ne produit plus, défense −20 %')}</div>`);if(n.sab>0)ex.push(`<div class="warn">${trad('Saboté : {n} s',{n:Math.ceil(n.sab)})}</div>`);
+  if(n.dis>0)ex.push(`<div class="warn">${trad('Désorganisé')}</div>`);if(occupied(n))ex.push(`<div class="k">${trad('Occupé : production −40 %')}</div>`);if(n.hold>0)ex.push(`<div class="k">${trad('Tient la position (défense ×1,6)')}</div>`);
+  if(n.collapse>0)ex.push(`<div class="warn">${trad("S'effondre dans {n} s",{n:Math.ceil(n.collapse)})}</div>`);if(!n.alive&&!n.rebuild)ex.push(`<div class="k">${trad('Cliquez-le pour le reconstruire')}</div>`);
+  tip.innerHTML=`<h4>${esc(n.name)}</h4><div class="k">${esc(kind)}</div>`+rows.map(([k,v])=>`<div class="row"><span class="k">${k}</span><span>${v}</span></div>`).join('')+ex.join('');
   tip.hidden=false;const r=tip.getBoundingClientRect();if(compact){tip.style.left='8px';tip.style.top=(view.t+8)+'px';return;}let x=mouse.x+18,y=mouse.y+18;if(x+r.width>VW-view.r-8)x=mouse.x-r.width-14;if(y+r.height>VH-view.b-8)y=mouse.y-r.height-14;tip.style.left=x+'px';tip.style.top=y+'px';
 }
 
@@ -1348,7 +1359,7 @@ function pick(sx,sy){let best=null,bd=1e9;for(const n of nodes){const[x,y]=S(n.x
 function setAbMode(k){
   if(state!=='play')return;
   if(abMode===k)abMode=-1;
-  else if(k===-2){if(!sel.size){pushFeed('Sélectionnez d\'abord les points qui enverront les renforts','X');return;}abMode=-2;}
+  else if(k===-2){if(!sel.size){pushFeed("Sélectionnez d'abord les points qui enverront les renforts",'X');return;}abMode=-2;}
   else if(k===-3){if(dynBlock(player))return;abMode=-3;}
   else{if(!abReady(player,k))return;const a=ABL[player][k];if(!a.target){act('ab',{i:k,n:-1});abMode=-1;}else abMode=k;}
   cv.classList.toggle('targeting',abMode!==-1);hud();
@@ -1361,7 +1372,7 @@ function leftClick(sx,sy,add){
   if(!n){aim=-1;if(!add){sel.clear();selDead=-1;}if(lastTouch)hover=null;return;}
   if(!n.alive){aim=-1;sel.clear();selDead=n.i;if(compact)setSheet('base',true);return;}
   selDead=-1;if(n.owner===player)aim=-1;
-  if(n.owner===player){if(!myCmd(n)){toast(`${n.name} est dans le secteur de votre allié`);return;}if(add){sel.has(n.i)?sel.delete(n.i):sel.add(n.i);}else{sel.clear();sel.add(n.i);}}
+  if(n.owner===player){if(!myCmd(n)){toast(trad('{nom} est dans le secteur de votre allié',{nom:n.name}));return;}if(add){sel.has(n.i)?sel.delete(n.i):sel.add(n.i);}else{sel.clear();sel.add(n.i);}}
   else if(sel.size){if(compact&&lastTouch){if(aim===n.i){sendSelection(n);aim=-1;}else{aim=n.i;hover=n;}}else sendSelection(n);}
 }
 function rightClick(sx,sy){if(abMode!==-1){setAbMode(abMode);return;}const n=pick(sx,sy);if(n&&n.alive&&sel.size)sendSelection(n);}
@@ -1403,8 +1414,8 @@ $('autoBuildBtn').onclick=()=>{if(!spectate)setAutoBuild(!autoB[player]);};
 function togglePause(){if(state!=='play'||(mode==='local'&&turn.phase!=='exec'))return;if(NET.on){proposeVote(paused?'resume':'pause');return;}paused=!paused;hud();}
 $('pauseBtn').onclick=togglePause;
 let pausedBeforeMenu=false;
-function openMenu(){if(state!=='play')return;menuOpen=true;pausedBeforeMenu=paused;if(!NET.on)paused=true;abMode=-1;$('mRestart').hidden=mode==='online';$('mQuit').textContent=mode==='solo'?"Sauvegarder et revenir à l'accueil":NET.ranked&&NET.on?'Abandonner (compte comme une défaite)':"Quitter la partie";cv.classList.remove('targeting');
-  $('menuInfo').textContent=`${sideName(player)} · IA ${DIFF[diff].name} · ${FMT.n} · ${fmt(time)} écoulées`;$('menuOv').hidden=false;saveGame();}
+function openMenu(){if(state!=='play')return;menuOpen=true;pausedBeforeMenu=paused;if(!NET.on)paused=true;abMode=-1;$('mRestart').hidden=mode==='online';$('mQuit').textContent=trad(mode==='solo'?"Sauvegarder et revenir à l'accueil":NET.ranked&&NET.on?'Abandonner (compte comme une défaite)':"Quitter la partie");cv.classList.remove('targeting');
+  $('menuInfo').textContent=trad('{camp} · IA {niveau} · {format} · {temps} écoulées',{camp:trad(sideName(player)),niveau:trad(DIFF[diff].name),format:trad(FMT.n),temps:fmt(time)});$('menuOv').hidden=false;saveGame();}
 function closeMenu(){menuOpen=false;$('menuOv').hidden=true;$('helpOv').hidden=true;if(!NET.on)paused=pausedBeforeMenu;hud();}
 $('menuBtn').onclick=openMenu;$('resumeBtn').onclick=closeMenu;
 $('mHelp').onclick=()=>{$('helpOv').hidden=false;};
@@ -1420,7 +1431,7 @@ function selHQ(){if(spectate)return;const n=qgOf(player);if(!n||n.owner!==player
 $('selHqBtn').onclick=selHQ;
 $('rallyBtn').onclick=()=>{if(!spectate)setAbMode(-2);};
 $('cedeBtn').onclick=()=>{const n=selNode();if(!n||!TEAM)return;act('cede',{n:n.i});if(NET.role==='guest'){n.sec=3-mySec;}sel.delete(n.i);hud();};
-let toastT=0;function toast(t){const e=$('toast');e.textContent=t;e.hidden=false;clearTimeout(toastT);toastT=setTimeout(()=>{e.hidden=true;},2600);}$('stopBtn').onclick=()=>{clearRally();hud();};
+let toastT=0;function toast(t){const e=$('toast');e.textContent=tx(t);e.hidden=false;clearTimeout(toastT);toastT=setTimeout(()=>{e.hidden=true;},2600);}$('stopBtn').onclick=()=>{clearRally();hud();};
 $('zoomIn').onclick=()=>zoomAt(vcx,vcy,1.3);$('zoomOut').onclick=()=>zoomAt(vcx,vcy,1/1.3);$('fitBtn').onclick=()=>{cam.set=false;fit(false);};
 addEventListener('keydown',e=>{
   if(state!=='play')return;
@@ -1510,23 +1521,23 @@ function award(winner,kind){
 function classBlock(c,withSlots){
   const xp=profile.xp[c],gi=gradeIdx(xp),g=GRADES[gi],nx=GRADES[gi+1],r=profile.rec[c];
   const pct=nx?100*(xp-g.xp)/(nx.xp-g.xp):100,eq=profile.equip[c].map(id=>PERKS.find(p=>p.id===id)).filter(Boolean);
-  return `<div class="cls" style="--c:${OC[c]}"><span class="lbl" style="color:${OC[c]}">${sideName(c)}</span><span class="gr">${g.n}</span>
-    <div class="meter"><i style="width:${pct}%"></i></div><span class="sm">${xp} XP${nx?` · ${nx.xp-xp} XP avant ${nx.n}`:' · grade maximal'}</span>
-    <span class="sm">${r.w} victoire${r.w>1?'s':''} · ${r.l} défaite${r.l>1?'s':''}${r.d?` · ${r.d} nul${r.d>1?'s':''}`:''}</span>
-    <span class="sm">Avantages : ${eq.length}/${slotsOf(gi)}${eq.length?' · '+eq.map(p=>p.n).join(', '):''}</span></div>`;
+  return `<div class="cls" style="--c:${OC[c]}"><span class="lbl" style="color:${OC[c]}">${trad(sideName(c))}</span><span class="gr">${trad(g.n)}</span>
+    <div class="meter"><i style="width:${pct}%"></i></div><span class="sm">${xp} XP · ${nx?trad('{n} XP avant {grade}',{n:nx.xp-xp,grade:trad(nx.n)}):trad('grade maximal')}</span>
+    <span class="sm">${trad(r.w>1?'{n} victoires':'{n} victoire',{n:r.w})} · ${trad(r.l>1?'{n} défaites':'{n} défaite',{n:r.l})}${r.d?' · '+trad(r.d>1?'{n} nuls':'{n} nul',{n:r.d}):''}</span>
+    <span class="sm">${trad('Avantages : {n}/{max}',{n:eq.length,max:slotsOf(gi)})}${eq.length?' · '+eq.map(p=>trad(p.n)).join(', '):''}</span></div>`;
 }
-function renderCareer(){$('career').innerHTML=classBlock('A')+classBlock('B');$('pvTxt').textContent=`${profile.pv} PV`;}
+function renderCareer(){$('career').innerHTML=classBlock('A')+classBlock('B');$('pvTxt').textContent=trad('{n} PV',{n:profile.pv});}
 function renderShop(){
-  $('shopPv').textContent=`${profile.pv} PV`;$('shopSlots').innerHTML=classBlock('A')+classBlock('B');
+  $('shopPv').textContent=trad('{n} PV',{n:profile.pv});$('shopSlots').innerHTML=classBlock('A')+classBlock('B');
   const box=$('perks');box.innerHTML='';
   for(const pk of PERKS){const own=profile.owned.includes(pk.id);const d=document.createElement('div');d.className='perk'+(own?' own':'');
-    d.innerHTML=`<div class="ph"><b>${pk.n}</b><span class="cost">${pk.cost} PV</span></div><span class="d">${pk.d}</span><div class="row"></div>`;
+    d.innerHTML=`<div class="ph"><b>${trad(pk.n)}</b><span class="cost">${trad('{n} PV',{n:pk.cost})}</span></div><span class="d">${trad(pk.d)}</span><div class="row"></div>`;
     const row=d.querySelector('.row');
-    if(!own){const b=document.createElement('button');b.className='btn sm gold';b.textContent=`Acheter · ${pk.cost} PV`;b.disabled=profile.pv<pk.cost;
+    if(!own){const b=document.createElement('button');b.className='btn sm gold';b.textContent=trad('Acheter · {n} PV',{n:pk.cost});b.disabled=profile.pv<pk.cost;
       b.onclick=()=>{if(profile.pv<pk.cost)return;profile.pv-=pk.cost;profile.owned.push(pk.id);saveProfile();renderShop();};row.appendChild(b);}
-    else{const lab=document.createElement('span');lab.className='lbl';lab.textContent='Équiper :';row.appendChild(lab);
+    else{const lab=document.createElement('span');lab.className='lbl';lab.textContent=trad('Équiper :');row.appendChild(lab);
       for(const c of['A','B']){const on=profile.equip[c].includes(pk.id),full=profile.equip[c].length>=slotsOf(gradeIdx(profile.xp[c]));
-        const b=document.createElement('button');b.className='btn sm';b.textContent=sideName(c);b.setAttribute('aria-pressed',String(on));b.disabled=!on&&full;
+        const b=document.createElement('button');b.className='btn sm';b.textContent=trad(sideName(c));b.setAttribute('aria-pressed',String(on));b.disabled=!on&&full;
         b.onclick=()=>{const L=profile.equip[c];if(L.includes(pk.id))L.splice(L.indexOf(pk.id),1);else if(L.length<slotsOf(gradeIdx(profile.xp[c])))L.push(pk.id);saveProfile();renderShop();};row.appendChild(b);}}
     box.appendChild(d);}
 }
@@ -1553,21 +1564,21 @@ function mapProblems(m){
   if(qb.length!==1)errs.push(qb.length?'Un seul QG des défenseurs est permis.':'Placez le QG des défenseurs.');
   if(list.some(n=>n.t==='base'&&n.side==='N'))errs.push('Chaque QG doit appartenir à un camp.');
   if(!(m.obj||[]).some(id=>pos[id]))errs.push('Ajoutez au moins un objectif.');
-  if(list.length>MAXN)errs.push(`Trop de points : ${list.length} sur ${MAXN} au maximum.`);
-  const wet=list.filter(n=>n.t!=='bridge'&&waterAt(wd,n.x,n.y));if(wet.length){errs.push(`Dans l'eau : ${wet.slice(0,3).map(n=>n.name).join(', ')}${wet.length>3?'…':''}.`);wet.forEach(n=>bad.add(n.id));}
-  const dry=list.filter(n=>n.t==='bridge'&&!waterAt(wd,n.x,n.y));if(dry.length){errs.push(`Pont hors de l'eau : ${dry.slice(0,3).map(n=>n.name).join(', ')}${dry.length>3?'…':''}.`);dry.forEach(n=>bad.add(n.id));}
+  if(list.length>MAXN)errs.push(MSG('Trop de points : {n} sur {max} au maximum.',{n:list.length,max:MAXN}));
+  const wet=list.filter(n=>n.t!=='bridge'&&waterAt(wd,n.x,n.y));if(wet.length){errs.push(MSG("Dans l'eau : {noms}.",{noms:wet.slice(0,3).map(n=>n.name).join(', ')+(wet.length>3?'…':'')}));wet.forEach(n=>bad.add(n.id));}
+  const dry=list.filter(n=>n.t==='bridge'&&!waterAt(wd,n.x,n.y));if(dry.length){errs.push(MSG("Pont hors de l'eau : {noms}.",{noms:dry.slice(0,3).map(n=>n.name).join(', ')+(dry.length>3?'…':'')}));dry.forEach(n=>bad.add(n.id));}
   const adj={};for(const n of list)adj[n.id]=[];
   let cross=0,bb=0;
   for(const[a,b]of parseEdges(m.edges)){const A=pos[a],B=pos[b];if(!A||!B)continue;adj[a].push(b);adj[b].push(a);
     if(A.t==='bridge'&&B.t==='bridge')bb++;else if(A.t!=='bridge'&&B.t!=='bridge'&&segWet(wd,A,B)){cross++;bad.add(a+'|'+b);}}
-  if(cross)errs.push(`${cross} route${cross>1?'s traversent':' traverse'} l'eau sans pont.`);
+  if(cross)errs.push(MSG(cross>1?"{n} routes traversent l'eau sans pont.":"{n} route traverse l'eau sans pont.",{n:cross}));
   if(bb)errs.push('Deux ponts ne peuvent pas être reliés directement.');
   if(qa.length===1&&qb.length===1){const seen=new Set([qa[0].id]),q=[qa[0].id];while(q.length){const u=q.pop();for(const v of adj[u])if(!seen.has(v)){seen.add(v);q.push(v);}}
     if(!seen.has(qb[0].id))errs.push('Aucune route ne relie les deux QG.');}
-  const iso=list.filter(n=>!adj[n.id].length);if(iso.length){warns.push(`${iso.length} point${iso.length>1?'s':''} sans route.`);iso.forEach(n=>bad.add(n.id));}
+  const iso=list.filter(n=>!adj[n.id].length);if(iso.length){warns.push(MSG(iso.length>1?'{n} points sans route.':'{n} point sans route.',{n:iso.length}));iso.forEach(n=>bad.add(n.id));}
   const cA=list.filter(n=>n.side==='A').length,cB=list.filter(n=>n.side==='B').length;
   if(cA<3||cB<3)warns.push('Chaque camp devrait avoir au moins 3 points de départ.');
-  if(Math.abs(cA-cB)>2)warns.push(`Camps déséquilibrés : ${cA} points attaquants, ${cB} défenseurs.`);
+  if(Math.abs(cA-cB)>2)warns.push(MSG('Camps déséquilibrés : {a} points attaquants, {b} défenseurs.',{a:cA,b:cB}));
   if(!(m.arr||[]).some(a=>a.ids&&a.ids.length))warns.push("Aucune zone : pas de bonus d'arrondissement.");
   return{errs,warns,bad};
 }
@@ -1643,26 +1654,26 @@ function toMap(e){
 
 function edSnap(){edUndo.push(JSON.stringify(ed));if(edUndo.length>60)edUndo.shift();edDirty=true;edCloseArm=0;}
 function edUndoDo(){if(!edUndo.length)return;ed=JSON.parse(edUndo.pop());edSel=null;edLink=null;edRiver=null;edDirty=true;edRefresh();}
-function edHint(t,bad){const h=$('edHint');h.textContent=t;h.className='edhint'+(bad?' bad':'');h.hidden=false;edHintT=3.2;}
+function edHint(t,bad){const h=$('edHint');h.textContent=tx(t);h.className='edhint'+(bad?' bad':'');h.hidden=false;edHintT=3.2;}
 function edOpen(m,copy){
   ed=m?fromMap(m,copy):blankEd();edUndo=[];edDirty=!!copy;edSel=null;edLink=null;edRiver=null;edCloseArm=0;edFrom=true;
   $('edOv').hidden=false;$('startOv').hidden=true;$('edName').value=ed.name;
   edResize();edCam={x:W/2,y:H/2,z:edFitZ};setEdTool('sel');edRefresh();
 }
 function edClose(force){
-  if(edDirty&&!force){if(Date.now()-edCloseArm>4000){edCloseArm=Date.now();$('edClose').textContent='Quitter sans enregistrer ?';setTimeout(()=>{$('edClose').textContent='Fermer';},4000);return;}}
-  $('edClose').textContent='Fermer';$('edOv').hidden=true;$('edIOv').hidden=true;ed=null;edFrom=false;state='menu';showStart();
+  if(edDirty&&!force){if(Date.now()-edCloseArm>4000){edCloseArm=Date.now();$('edClose').textContent=trad('Quitter sans enregistrer ?');setTimeout(()=>{$('edClose').textContent=trad('Fermer');},4000);return;}}
+  $('edClose').textContent=trad('Fermer');$('edOv').hidden=true;$('edIOv').hidden=true;ed=null;edFrom=false;state='menu';showStart();
 }
 function edSave(silent){
   if(!ed)return null;ed.name=$('edName').value.trim()||ed.name;const m=toMap(ed);
   const i=customMaps.findIndex(x=>x.id===m.id);if(i>=0)customMaps[i]=m;else customMaps.push(m);
   const ok=saveCustomMaps();edDirty=false;curMapId=m.id;try{localStorage.setItem(MAPSEL_KEY,m.id);}catch(e){}
-  if(!silent)edHint(ok?'Carte enregistrée. Elle apparaît dans la liste des cartes de l\'accueil.':"Enregistrement impossible : le stockage du navigateur est indisponible.",!ok);
+  if(!silent)edHint(ok?"Carte enregistrée. Elle apparaît dans la liste des cartes de l'accueil.":"Enregistrement impossible : le stockage du navigateur est indisponible.",!ok);
   return m;
 }
 function edTest(){
   const m=toMap(ed),pb=mapProblems(m);
-  if(pb.errs.length){edHint('À corriger avant de jouer : '+pb.errs[0],true);edRefresh();return;}
+  if(pb.errs.length){edHint(trad('À corriger avant de jouer : {err}',{err:tx(pb.errs[0])}),true);edRefresh();return;}
   edSave(true);$('edOv').hidden=true;fromEditor=true;curMapId=m.id;startGame(false);
 }
 function edResize(){const r=edCv.getBoundingClientRect();edDpr=Math.min(window.devicePixelRatio||1,2);edVW=Math.max(10,r.width);edVH=Math.max(10,r.height);edCv.width=Math.round(edVW*edDpr);edCv.height=Math.round(edVH*edDpr);edFitZ=Math.min((edVW-20)/W,(edVH-20)/H);}
@@ -1684,15 +1695,15 @@ function edCountType(t,s){return ed.nodes.filter(n=>n.type===t&&(!s||n.side===s)
 function edAddNode(tool,wx,wy){
   const wd=edWater(),inW=waterAt(wd,wx,wy);
   if(tool==='bridge'){if(!inW){edHint("Un pont se place sur l'eau : tracez d'abord une rivière.",true);return;}}
-  else if(inW){edHint('Ce point est dans l\'eau. Placez-le sur la terre ferme ou utilisez un pont.',true);return;}
-  if(ed.nodes.length>=MAXN){edHint(`Maximum ${MAXN} points par carte.`,true);return;}
-  for(const n of ed.nodes)if(Math.hypot(n.x-wx,n.y-wy)<(tool==='bridge'||n.type==='bridge'?26:44)){edHint('Trop près d\'un autre point.',true);return;}
+  else if(inW){edHint("Ce point est dans l'eau. Placez-le sur la terre ferme ou utilisez un pont.",true);return;}
+  if(ed.nodes.length>=MAXN){edHint(MSG('Maximum {n} points par carte.',{n:MAXN}),true);return;}
+  for(const n of ed.nodes)if(Math.hypot(n.x-wx,n.y-wy)<(tool==='bridge'||n.type==='bridge'?26:44)){edHint("Trop près d'un autre point.",true);return;}
   edSnap();
   if(tool==='qgA'||tool==='qgB'){const s=tool==='qgA'?'A':'B',ex=ed.nodes.find(n=>n.type==='base'&&n.side===s);
     if(ex){ex.x=wx;ex.y=wy;edSel={k:'node',n:ex};edRefresh();return;}
-    const n={id:newId('q'),name:s==='A'?'QG attaquants':'QG défenseurs',x:wx,y:wy,type:'base',side:s,zone:0};ed.nodes.push(n);edSel={k:'node',n};edRefresh();return;}
+    const n={id:newId('q'),name:trad(s==='A'?'QG attaquants':'QG défenseurs'),x:wx,y:wy,type:'base',side:s,zone:0};ed.nodes.push(n);edSel={k:'node',n};edRefresh();return;}
   const t=tool,cnt=edCountType(t)+1,names={dist:'Quartier',obj:'Objectif',gare:'Gare',bridge:'Pont'};
-  const n={id:newId(t[0]),name:`${names[t]} ${cnt}`,x:wx,y:wy,type:t,side:t==='obj'||t==='bridge'?'N':edSide,zone:0,hill:false};
+  const n={id:newId(t[0]),name:`${trad(names[t])} ${cnt}`,x:wx,y:wy,type:t,side:t==='obj'||t==='bridge'?'N':edSide,zone:0,hill:false};
   if(t==='bridge')n.river=riverNear(wx,wy);
   ed.nodes.push(n);edSel={k:'node',n};
   if(t==='bridge'){const land=ed.nodes.filter(m=>m.type!=='bridge'&&!segWet(wd,m,{x:m.x,y:m.y})).map(m=>({m,d:Math.hypot(m.x-wx,m.y-wy)})).sort((a,b)=>a.d-b.d);
@@ -1734,17 +1745,17 @@ function edAutoLink(){
     const cand=land.map(m=>({m,d:Math.hypot(m.x-b.x,m.y-b.y)})).filter(o=>o.d<320).sort((x,y)=>x.d-y.d);
     const done=new Set(ed.edges.filter(e=>e[0]===b.id||e[1]===b.id).map(e=>edCompAt(...(()=>{const o=ed.nodes.find(n=>n.id===(e[0]===b.id?e[1]:e[0]));return[o.x,o.y];})())));
     for(const o of cand){const c=edCompAt(o.m.x,o.m.y);if(done.has(c)||has(b,o.m))continue;ed.edges.push([b.id,o.m.id]);done.add(c);add++;if(done.size>=2)break;}}
-  edHint(add?`${add} route${add>1?'s':''} ajoutée${add>1?'s':''}. Vérifiez et retirez celles qui ne vous plaisent pas.`:'Aucune route à ajouter.');edRefresh();
+  edHint(add?MSG(add>1?'{n} routes ajoutées. Vérifiez et retirez celles qui ne vous plaisent pas.':'{n} route ajoutée. Vérifiez et retirez celles qui ne vous plaisent pas.',{n:add}):'Aucune route à ajouter.');edRefresh();
 }
 function edFinishRiver(){if(!edRiver)return;if(edRiver.pts.length<2){ed.rivers=ed.rivers.filter(r=>r!==edRiver);edHint('Rivière annulée : il faut au moins deux points.',true);}
   else{edSel={k:'river',r:edRiver};for(const n of ed.nodes)if(n.type==='bridge')n.river=riverNear(n.x,n.y,n.river);}edRiver=null;edCompCache=null;edRefresh();}
 function setEdTool(k){if(edRiver)edFinishRiver();edTool=k;edLink=null;document.querySelectorAll('#edTools .tool').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.t===k)));edToolOpts();edRender();
-  const t=TOOLS.find(x=>x.k===k);$('edTip').textContent=t?t.d:'';}
+  const t=TOOLS.find(x=>x.k===k);$('edTip').textContent=t?trad(t.d):'';}
 function edToolOpts(){
   const o=$('edOpts');let h='';
-  if(edTool==='dist'||edTool==='gare')h=`<span class="lbl">Camp de départ</span><div class="seg" id="edSideSeg">${[['A','Attaquants'],['N','Neutre'],['B','Défenseurs']].map(([s,l])=>`<button data-s="${s}" aria-pressed="${edSide===s}">${l}</button>`).join('')}</div>`;
-  else if(edTool==='river')h=`<span class="lbl">Largeur : <b id="edHWv">${edHW*8} m</b></span><input type="range" id="edHW" min="7" max="30" value="${edHW}"><button class="btn sm gold" id="edRivEnd">Terminer la rivière</button>`;
-  else if(edTool==='zone')h=`<span class="lbl">Zone à peindre</span><div class="zpick">${['Aucune',...ed.zones.map(z=>z.n)].map((n,k)=>`<button class="btn sm" data-z="${k}" aria-pressed="${edZone===k}">${k?`<i class="zdot" style="background:${ZCOL[k-1]}"></i>`:''}${esc(n)}</button>`).join('')}</div>`;
+  if(edTool==='dist'||edTool==='gare')h=`<span class="lbl">${trad('Camp de départ')}</span><div class="seg" id="edSideSeg">${[['A','Attaquants'],['N','Neutre'],['B','Défenseurs']].map(([s,l])=>`<button data-s="${s}" aria-pressed="${edSide===s}">${trad(l)}</button>`).join('')}</div>`;
+  else if(edTool==='river')h=`<span class="lbl">${trad('Largeur : {m}',{m:`<b id="edHWv">${edHW*8} m</b>`})}</span><input type="range" id="edHW" min="7" max="30" value="${edHW}"><button class="btn sm gold" id="edRivEnd">${trad('Terminer la rivière')}</button>`;
+  else if(edTool==='zone')h=`<span class="lbl">${trad('Zone à peindre')}</span><div class="zpick">${[trad('Aucune'),...ed.zones.map(z=>trad(z.n))].map((n,k)=>`<button class="btn sm" data-z="${k}" aria-pressed="${edZone===k}">${k?`<i class="zdot" style="background:${ZCOL[k-1]}"></i>`:''}${esc(n)}</button>`).join('')}</div>`;
   o.innerHTML=h;o.hidden=!h;
   o.querySelectorAll('#edSideSeg button').forEach(b=>b.onclick=()=>{edSide=b.dataset.s;edToolOpts();});
   const hw=o.querySelector('#edHW');if(hw)hw.oninput=()=>{edHW=+hw.value;$('edHWv').textContent=`${edHW*8} m`;if(edRiver){edRiver.hw=edHW;edCompCache=null;edRender();}};
@@ -1759,23 +1770,23 @@ function edRefresh(){edCompCache=null;edPanel();edRender();}
 function edPanel(){
   const box=$('edSelBox');const s=edSel;let h='';
   if(s&&s.k==='node'&&ed.nodes.includes(s.n)){const n=s.n;
-    h=`<div class="cardhead"><span class="lbl">Point sélectionné</span><button class="btn sm" id="edDel">Supprimer</button></div>
-      <label class="field"><span class="lbl">Nom</span><input class="edin" id="edNName" maxlength="26" value="${esc(n.name)}"></label>`;
-    if(n.type!=='bridge'){h+=`<label class="field"><span class="lbl">Type</span><select class="edin" id="edNType">${[['dist','Quartier'],['obj','Objectif'],['gare','Gare'],['base','QG']].map(([k,l])=>`<option value="${k}"${n.type===k?' selected':''}>${l}</option>`).join('')}</select></label>
-      <div class="field"><span class="lbl">Camp au départ</span><div class="seg" id="edNSide">${[['A','Attaquants'],['N','Neutre'],['B','Défenseurs']].map(([k,l])=>`<button data-s="${k}" aria-pressed="${n.side===k}"${n.type==='base'&&k==='N'?' disabled':''}>${l}</button>`).join('')}</div></div>
-      <label class="chk"><input type="checkbox" id="edNHill"${n.hill?' checked':''}> Colline : 35 % de soldats en plus pour le prendre</label>
-      <label class="field"><span class="lbl">Zone</span><select class="edin" id="edNZone"><option value="0">Aucune</option>${ed.zones.map((z,k)=>`<option value="${k+1}"${n.zone===k+1?' selected':''}>${esc(z.n)}</option>`).join('')}</select></label>`;}
-    else h+=`<p class="mini">Pont ${esc(deOf2(n))}. Il doit relier un point de chaque rive.</p>
-      <div class="field"><span class="lbl">Tenu au départ par</span><div class="seg" id="edNSide">${[['A','Attaquants'],['N','Personne'],['B','Défenseurs']].map(([k,l])=>`<button data-s="${k}" aria-pressed="${n.side===k}">${l}</button>`).join('')}</div></div>`;
+    h=`<div class="cardhead"><span class="lbl">${trad('Point sélectionné')}</span><button class="btn sm" id="edDel">${trad('Supprimer')}</button></div>
+      <label class="field"><span class="lbl">${trad('Nom')}</span><input class="edin" id="edNName" maxlength="26" value="${esc(n.name)}"></label>`;
+    if(n.type!=='bridge'){h+=`<label class="field"><span class="lbl">${trad('Type')}</span><select class="edin" id="edNType">${[['dist','Quartier'],['obj','Objectif'],['gare','Gare'],['base','QG']].map(([k,l])=>`<option value="${k}"${n.type===k?' selected':''}>${trad(l)}</option>`).join('')}</select></label>
+      <div class="field"><span class="lbl">${trad('Camp au départ')}</span><div class="seg" id="edNSide">${[['A','Attaquants'],['N','Neutre'],['B','Défenseurs']].map(([k,l])=>`<button data-s="${k}" aria-pressed="${n.side===k}"${n.type==='base'&&k==='N'?' disabled':''}>${trad(l)}</button>`).join('')}</div></div>
+      <label class="chk"><input type="checkbox" id="edNHill"${n.hill?' checked':''}> ${trad('Colline : 35 % de soldats en plus pour le prendre')}</label>
+      <label class="field"><span class="lbl">${trad('Zone')}</span><select class="edin" id="edNZone"><option value="0">${trad('Aucune')}</option>${ed.zones.map((z,k)=>`<option value="${k+1}"${n.zone===k+1?' selected':''}>${esc(trad(z.n))}</option>`).join('')}</select></label>`;}
+    else h+=`<p class="mini">${esc(trad('Pont {de}. Il doit relier un point de chaque rive.',{de:deOf2(n),riviere:n.river||''}))}</p>
+      <div class="field"><span class="lbl">${trad('Tenu au départ par')}</span><div class="seg" id="edNSide">${[['A','Attaquants'],['N','Personne'],['B','Défenseurs']].map(([k,l])=>`<button data-s="${k}" aria-pressed="${n.side===k}">${trad(l)}</button>`).join('')}</div></div>`;
   }else if(s&&s.k==='river'&&ed.rivers.includes(s.r)){const r=s.r;
-    h=`<div class="cardhead"><span class="lbl">Rivière sélectionnée</span><button class="btn sm" id="edDel">Supprimer</button></div>
-      <label class="field"><span class="lbl">Nom, avec l'article</span><input class="edin" id="edRName" maxlength="24" value="${esc(r.n)}" placeholder="la Loire, le Rhin, l'Ill"></label>
-      <label class="field"><span class="lbl">Largeur : <b id="edRWv">${r.hw*8} m</b></span><input type="range" id="edRW" min="7" max="30" value="${r.hw}"></label>
-      <p class="mini">Glissez les points blancs pour modifier le tracé.</p>`;
+    h=`<div class="cardhead"><span class="lbl">${trad('Rivière sélectionnée')}</span><button class="btn sm" id="edDel">${trad('Supprimer')}</button></div>
+      <label class="field"><span class="lbl">${trad("Nom, avec l'article")}</span><input class="edin" id="edRName" maxlength="24" value="${esc(r.n)}" placeholder="${trad("la Loire, le Rhin, l'Ill")}"></label>
+      <label class="field"><span class="lbl">${trad('Largeur : {m}',{m:`<b id="edRWv">${r.hw*8} m</b>`})}</span><input type="range" id="edRW" min="7" max="30" value="${r.hw}"></label>
+      <p class="mini">${trad('Glissez les points blancs pour modifier le tracé.')}</p>`;
   }else if(s&&s.k==='edge'&&ed.edges.includes(s.e)){const a=ed.nodes.find(n=>n.id===s.e[0]),b=ed.nodes.find(n=>n.id===s.e[1]);
-    h=`<div class="cardhead"><span class="lbl">Route</span><button class="btn sm" id="edDel">Supprimer</button></div><p class="mini">${esc(a?a.name:'?')} ↔ ${esc(b?b.name:'?')}</p>`;
-  }else{edSel=null;h=`<span class="lbl">Sélection</span><p class="mini">Choisissez un outil à gauche. Avec la sélection, cliquez un point, une route ou une rivière pour le modifier.</p>
-      <p class="mini">Clic droit ou glisser sur le vide : déplacer la vue · molette : zoom · ${K('Ctrl')}${K('Z')} annuler · ${K('Suppr')} effacer.</p>`;}
+    h=`<div class="cardhead"><span class="lbl">${trad('Route')}</span><button class="btn sm" id="edDel">${trad('Supprimer')}</button></div><p class="mini">${esc(a?a.name:'?')} ↔ ${esc(b?b.name:'?')}</p>`;
+  }else{edSel=null;h=`<span class="lbl">${trad('Sélection')}</span><p class="mini">${trad('Choisissez un outil à gauche. Avec la sélection, cliquez un point, une route ou une rivière pour le modifier.')}</p>
+      <p class="mini">${trad('Clic droit ou glisser sur le vide : déplacer la vue · molette : zoom · {annuler} annuler · {suppr} effacer.',{annuler:K('Ctrl')+K('Z'),suppr:K(trad('Suppr'))})}</p>`;}
   box.innerHTML=h;
   const on=(id,ev,f)=>{const el=box.querySelector('#'+id);if(el)el[ev]=f;};
   on('edDel','onclick',()=>{if(s.k==='node')edErase({k:'node',n:s.n});else if(s.k==='river')edErase({k:'river',r:s.r});else if(s.k==='edge')edErase({k:'edge',e:s.e});edSel=null;edRefresh();});
@@ -1787,7 +1798,7 @@ function edPanel(){
   on('edRName','onchange',e=>{edSnap();const old=s.r.n;s.r.n=e.target.value.trim().slice(0,24)||old;s.r.de=deFor(s.r.n);s.r.auto=true;for(const n of ed.nodes)if(n.type==='bridge'&&n.river===old)n.river=s.r.n;edRefresh();});
   const rw=box.querySelector('#edRW');if(rw){rw.onpointerdown=()=>edSnap();rw.oninput=()=>{s.r.hw=+rw.value;box.querySelector('#edRWv').textContent=`${s.r.hw*8} m`;edCompCache=null;edRender();edChecks();};}
   // zones
-  const zb=$('edZones');zb.innerHTML=ed.zones.map((z,k)=>{const c=ed.nodes.filter(n=>n.zone===k+1).length;return `<div class="zrow"><i class="zdot" style="background:${ZCOL[k]}"></i><input class="edin" data-zn="${k}" maxlength="26" value="${esc(z.n)}"><select class="edin" data-zr="${k}">${ROLES.map(([r,l])=>`<option value="${r}"${z.role===r?' selected':''}>${l}</option>`).join('')}</select><span class="zc">${c}</span></div>`;}).join('');
+  const zb=$('edZones');zb.innerHTML=ed.zones.map((z,k)=>{const c=ed.nodes.filter(n=>n.zone===k+1).length;return `<div class="zrow"><i class="zdot" style="background:${ZCOL[k]}"></i><input class="edin" data-zn="${k}" maxlength="26" value="${esc(trad(z.n))}"><select class="edin" data-zr="${k}">${ROLES.map(([r,l])=>`<option value="${r}"${z.role===r?' selected':''}>${trad(l)}</option>`).join('')}</select><span class="zc">${c}</span></div>`;}).join('');
   zb.querySelectorAll('[data-zn]').forEach(i=>i.onchange=()=>{edSnap();ed.zones[+i.dataset.zn].n=i.value.trim().slice(0,26)||`Zone ${+i.dataset.zn+1}`;edPanel();edToolOpts();});
   zb.querySelectorAll('[data-zr]').forEach(i=>i.onchange=()=>{edSnap();ed.zones[+i.dataset.zr].role=i.value;edPanel();});
   edChecks();
@@ -1796,8 +1807,8 @@ function deOf2(n){const r=ed.rivers.find(x=>x.n===n.river);return r?(r.de||deFor
 function edChecks(){
   if(!ed)return;const m=toMap(ed),pb=mapProblems(m);edBad=pb.bad;
   const cA=ed.nodes.filter(n=>n.side==='A').length,cB=ed.nodes.filter(n=>n.side==='B').length;
-  $('edStats').textContent=`${ed.nodes.length}/${MAXN} points · ${ed.edges.length} routes · ${cA} attaquants · ${cB} défenseurs · ${m.obj.length} objectif${m.obj.length>1?'s':''}`;
-  $('edCheck').innerHTML=pb.errs.map(t=>`<div class="e">✕ ${esc(t)}</div>`).join('')+pb.warns.map(t=>`<div class="w">• ${esc(t)}</div>`).join('')+(pb.errs.length?'':'<div class="ok">✓ La carte est jouable.</div>');
+  $('edStats').textContent=trad(m.obj.length>1?'{n}/{max} points · {r} routes · {a} attaquants · {b} défenseurs · {o} objectifs':'{n}/{max} points · {r} routes · {a} attaquants · {b} défenseurs · {o} objectif',{n:ed.nodes.length,max:MAXN,r:ed.edges.length,a:cA,b:cB,o:m.obj.length});
+  $('edCheck').innerHTML=pb.errs.map(t=>`<div class="e">✕ ${esc(tx(t))}</div>`).join('')+pb.warns.map(t=>`<div class="w">• ${esc(tx(t))}</div>`).join('')+(pb.errs.length?'':`<div class="ok">✓ ${trad('La carte est jouable.')}</div>`);
   $('edTest').disabled=!!pb.errs.length;
 }
 let edBad=new Set();
@@ -1826,7 +1837,7 @@ function edRender(){
     g.beginPath();if(n.type==='base')g.rect(x-r,y-r,2*r,2*r);else if(n.type==='bridge'){g.rect(x-r*1.4,y-r*0.9,r*2.8,r*1.8);}else g.arc(x,y,r,0,Math.PI*2);
     g.fillStyle=C.ink;g.fill();g.lineWidth=n.type==='bridge'?2:3;g.strokeStyle=col;g.stroke();
     if(n.hill){g.fillStyle=C.gold;g.font=`800 ${Math.round(11*zz)}px ${FD}`;g.textAlign='center';g.textBaseline='middle';g.fillText('▲',x,y+1);}
-    else if(n.type==='base'){g.fillStyle=col;g.font=`800 ${Math.round(11*zz)}px ${FD}`;g.textAlign='center';g.textBaseline='middle';g.fillText('QG',x,y+1);}
+    else if(n.type==='base'){g.fillStyle=col;g.font=`800 ${Math.round(11*zz)}px ${FD}`;g.textAlign='center';g.textBaseline='middle';g.fillText(trad('QG'),x,y+1);}
     else if(n.type==='gare'){g.fillStyle=col;g.font=`800 ${Math.round(10*zz)}px ${FD}`;g.textAlign='center';g.textBaseline='middle';g.fillText('G',x,y+1);}
     if(edBad.has(n.id)){g.strokeStyle=C.atk;g.lineWidth=2;g.setLineDash([4,3]);g.beginPath();g.arc(x,y,r+10,0,Math.PI*2);g.stroke();g.setLineDash([]);}
     if((edSel&&edSel.n===n)||edLink===n){g.strokeStyle=C.text;g.lineWidth=2;g.setLineDash([5,4]);g.beginPath();g.arc(x,y,r+12,0,Math.PI*2);g.stroke();g.setLineDash([]);}
@@ -1883,20 +1894,20 @@ function edKey(e){
   return true;
 }
 // barre d'outils
-$('edTools').insertAdjacentHTML('afterbegin',TOOLS.map(t=>`<button class="tool" data-t="${t.k}" aria-pressed="false"><i class="ti ti-${t.k}"></i><span>${t.n}</span><span class="key">${t.key}</span></button>`).join(''));
+$('edTools').insertAdjacentHTML('afterbegin',TOOLS.map(t=>`<button class="tool" data-t="${t.k}" aria-pressed="false"><i class="ti ti-${t.k}"></i><span>${trad(t.n)}</span><span class="key">${t.key}</span></button>`).join(''));
 document.querySelectorAll('#edTools .tool').forEach(b=>b.onclick=()=>setEdTool(b.dataset.t));
 $('edName').onchange=()=>{edSnap();ed.name=$('edName').value.trim().slice(0,28)||ed.name;edChecks();};
 $('edSave').onclick=()=>edSave();$('edTest').onclick=edTest;$('edClose').onclick=()=>edClose(false);
 $('edUndo').onclick=edUndoDo;$('edAuto').onclick=edAutoLink;$('edFit').onclick=()=>{edCam={x:W/2,y:H/2,z:edFitZ};edRender();};
-$('edBase').innerHTML='<option value="">Nouvelle carte…</option><option value="blank">Carte vierge</option>'+MAP_ORDER.map(id=>`<option value="${id}">Copie de ${MAPS[id].name}</option>`).join('');
-$('edBase').onchange=()=>{const v=$('edBase').value;$('edBase').value='';if(!v)return;const keepDirty=edDirty;if(v==='blank')edOpen(null);else edOpen(MAPS[v],true);if(keepDirty)edHint('Nouvelle carte créée. La précédente n\'était pas enregistrée.');};
-$('edIO').onclick=()=>{$('edIOText').value=JSON.stringify(toMap(ed));$('edIOMsg').textContent='Copiez ce texte pour partager votre carte, ou collez celui d\'une autre carte puis importez-le.';$('edIOMsg').className='mini';$('edIOv').hidden=false;};
+$('edBase').innerHTML=`<option value="">${trad('Nouvelle carte…')}</option><option value="blank">${trad('Carte vierge')}</option>`+MAP_ORDER.map(id=>`<option value="${id}">${trad('Copie de {nom}',{nom:MAPS[id].name})}</option>`).join('');
+$('edBase').onchange=()=>{const v=$('edBase').value;$('edBase').value='';if(!v)return;const keepDirty=edDirty;if(v==='blank')edOpen(null);else edOpen(MAPS[v],true);if(keepDirty)edHint("Nouvelle carte créée. La précédente n'était pas enregistrée.");};
+$('edIO').onclick=()=>{$('edIOText').value=JSON.stringify(toMap(ed));$('edIOMsg').textContent=trad("Copiez ce texte pour partager votre carte, ou collez celui d'une autre carte puis importez-le.");$('edIOMsg').className='mini';$('edIOv').hidden=false;};
 $('edIOClose').onclick=()=>{$('edIOv').hidden=true;};
-$('edIOCopy').onclick=()=>{const t=$('edIOText');t.select();let ok=false;try{ok=document.execCommand('copy');}catch(e){}if(navigator.clipboard)navigator.clipboard.writeText(t.value).then(()=>{$('edIOMsg').textContent='Copié dans le presse-papiers.';},()=>{});if(ok)$('edIOMsg').textContent='Copié dans le presse-papiers.';};
+$('edIOCopy').onclick=()=>{const t=$('edIOText');t.select();let ok=false;try{ok=document.execCommand('copy');}catch(e){}if(navigator.clipboard)navigator.clipboard.writeText(t.value).then(()=>{$('edIOMsg').textContent=trad('Copié dans le presse-papiers.');},()=>{});if(ok)$('edIOMsg').textContent=trad('Copié dans le presse-papiers.');};
 $('edIOImport').onclick=()=>{let m;try{m=nettoyer(JSON.parse($('edIOText').value));}catch(e){m=null;}
-  if(!m||!Array.isArray(m.nodes)||!m.hq||typeof m.name!=='string'){$('edIOMsg').textContent="Ce texte n'est pas une carte valide.";$('edIOMsg').className='mini warn';return;}
+  if(!m||!Array.isArray(m.nodes)||!m.hq||typeof m.name!=='string'){$('edIOMsg').textContent=trad("Ce texte n'est pas une carte valide.");$('edIOMsg').className='mini warn';return;}
   try{const clean=sanitizeMap(m);edSnap();ed=fromMap(clean,true);ed.name=clean.name;$('edName').value=ed.name;edSel=null;edRefresh();$('edIOv').hidden=true;edHint('Carte importée. Enregistrez-la pour la garder.');}
-  catch(e){$('edIOMsg').textContent="Impossible d'importer cette carte.";$('edIOMsg').className='mini warn';}};
+  catch(e){$('edIOMsg').textContent=trad("Impossible d'importer cette carte.");$('edIOMsg').className='mini warn';}};
 addEventListener('resize',()=>{if(ed&&!$('edOv').hidden){edResize();edClamp();edRender();}});
 setInterval(()=>{if(edHintT>0){edHintT-=0.25;if(edHintT<=0)$('edHint').hidden=true;}},250);
 /* nettoyage d'une carte venue de l'extérieur (import, partie en ligne) */
@@ -1935,7 +1946,7 @@ function sanitizeMap(m){
 }
 
 
-function refreshEdBase(){const sel=$('edBase');sel.innerHTML='<option value="">Nouvelle carte…</option><option value="blank">Carte vierge</option>'+MAP_ORDER.map(id=>`<option value="b:${id}">Copie de ${esc(MAPS[id].name)}</option>`).join('')+customMaps.map(m=>`<option value="c:${esc(m.id)}">Copie de ${esc(m.name)}</option>`).join('');}
+function refreshEdBase(){const sel=$('edBase');sel.innerHTML=`<option value="">${trad('Nouvelle carte…')}</option><option value="blank">${trad('Carte vierge')}</option>`+MAP_ORDER.map(id=>`<option value="b:${id}">${esc(trad('Copie de {nom}',{nom:MAPS[id].name}))}</option>`).join('')+customMaps.map(m=>`<option value="c:${esc(m.id)}">${esc(trad('Copie de {nom}',{nom:m.name}))}</option>`).join('');}
 $('edBase').onchange=()=>{const v=$('edBase').value;$('edBase').value='';if(!v)return;const keep=edDirty;
   if(v==='blank')edOpen(null);else{const m=v.startsWith('b:')?MAPS[v.slice(2)]:customMaps.find(x=>x.id===v.slice(2));if(m)edOpen(m,true);}
   if(keep)edHint("Nouvelle carte créée. La précédente n'était pas enregistrée.");};
@@ -1954,7 +1965,7 @@ function showStart(){
   if(!NET.role)netStatus('');
   if(NET.lastRanked&&!NET.role){mode='ranked';NET.lastRanked=false;setModeUI();}rkRender();
   const s=readSave();const b=$('contBtn');
-  if(s){const mn=typeof s.map==='string'?(MAPS[s.map]&&MAPS[s.map].name):(s.map&&s.map.name);b.hidden=false;b.textContent=`Continuer · ${mn?mn+' · ':''}${sideName(s.player)} · ${fmt(s.time)}`;}else b.hidden=true;
+  if(s){const mn=typeof s.map==='string'?(MAPS[s.map]&&MAPS[s.map].name):(s.map&&s.map.name);b.hidden=false;b.textContent=`${trad('Continuer')} · ${mn?mn+' · ':''}${trad(sideName(s.player))} · ${fmt(s.time)}`;}else b.hidden=true;
 }
 function beginPlay(){
   state='play';paused=false;menuOpen=false;setSpeed(1);setRatio(0.5);abMode=-1;
@@ -1965,10 +1976,11 @@ function beginPlay(){
 }
 function setSideTag(){
   const tag=$('sideTag');
-  if(spectate)tag.innerHTML=`Simulation · ${esc(MAP.name)} · IA ${DIFF[diff].name} · vous suivez les <b style="color:${OC[player]}">${sideName(player,1)}</b>`;
-  else if(mode==='local')tag.innerHTML=`Deux joueurs · ${esc(MAP.name)} · manche ${turn.round} · `+(turn.phase==='exec'?'exécution':`au tour des <b style="color:${OC[player]}">${sideName(player,1)}</b>`);
-  else if(mode==='online')tag.innerHTML=`${NET.ranked?'Classée':TEAM?'2 contre 2':'En ligne'} · ${esc(MAP.name)} · vous : <b style="color:${OC[player]}">${sideName(player)}</b>${TEAM?` · secteur ${SECN[player][mySec]}`:''}`;
-  else tag.innerHTML=`Vous : <b style="color:${OC[player]}">${sideName(player)}</b>${TEAM?` · secteur ${SECN[player][mySec]} · 2 contre 2`:` · ${GRADES[gradeIdx(profile.xp[player])].n}`} · ${esc(MAP.name)} · IA ${DIFF[diff].name}`;
+  const camp=(pl)=>`<b style="color:${OC[player]}">${trad(sideName(player,pl))}</b>`,ville=esc(MAP.name),ia=trad('IA {niveau}',{niveau:trad(DIFF[diff].name)}),sect=()=>trad('secteur {nom}',{nom:trad(SECN[player][mySec])});
+  if(spectate)tag.innerHTML=`${trad('Simulation')} · ${ville} · ${ia} · ${trad('vous suivez les {camp}',{camp:camp(1)})}`;
+  else if(mode==='local')tag.innerHTML=`${trad('Deux joueurs')} · ${ville} · ${trad('manche {n}',{n:turn.round})} · `+(turn.phase==='exec'?trad('exécution'):trad('au tour des {camp}',{camp:camp(1)}));
+  else if(mode==='online')tag.innerHTML=`${trad(NET.ranked?'Classée':TEAM?'2 contre 2':'En ligne')} · ${ville} · ${trad('vous : {camp}',{camp:camp(0)})}${TEAM?' · '+sect():''}`;
+  else tag.innerHTML=`${trad('Vous : {camp}',{camp:camp(0)})}${TEAM?` · ${sect()} · ${trad('2 contre 2')}`:` · ${trad(GRADES[gradeIdx(profile.xp[player])].n)}`} · ${ville} · ${ia}`;
 }
 function follow(s){if(!spectate)return;player=s;sel.clear();selDead=-1;document.documentElement.style.setProperty('--side',OC[player]);buildAbList();buildArsenal();setSideTag();
   $('folA').setAttribute('aria-pressed',String(s==='A'));$('folB').setAttribute('aria-pressed',String(s==='B'));hud();}
@@ -1987,9 +1999,9 @@ function startGame(withTut){
   reset();tut=withTut?0:-1;for(const k in tutFlag)delete tutFlag[k];
   applyPerks(player);
   beginPlay();clearSave();
-  if(P[player].perks.length)log(`Avantages équipés : ${P[player].perks.join(', ')}`,player,undefined,player);
+  if(P[player].perks.length)log(trad('Avantages équipés : {liste}',{liste:P[player].perks.map(x=>trad(x)).join(', ')}),player,undefined,player);
   log('Préparation : 75 s pour construire, rechercher et planifier vos attaques','X',undefined,player);
-  if(TEAM)log(`2 contre 2 : vous commandez le secteur ${SECN[player][mySec]} et le QG, une IA alliée tient le secteur ${SECN[player][3-mySec]}. Trésor et capacités sont communs.`,'X',undefined,player);
+  if(TEAM)log(MSG('2 contre 2 : vous commandez le secteur {a} et le QG, une IA alliée tient le secteur {b}. Trésor et capacités sont communs.',{a:SECN[player][mySec],b:SECN[player][3-mySec]}),'X',undefined,player);
   const hq=qgOf(player);sel.clear();sel.add(hq.i);hud();
 }
 $('goBtn').onclick=()=>{fromEditor=false;if(mode==='local')startLocal();else if(mode==='sim')startSim();else{mode='solo';startGame(false);}};
@@ -2008,28 +2020,30 @@ function endGame(winner,why,kind,remote){
   if(!remote)series.push([Math.round(time),Math.round(army.A),Math.round(army.B),Math.round(P.A.score),Math.round(P.B.score)]);
   const res=winner===null?'draw':winner===player?'win':'lose';
   if(spectate||mode==='local'){
-    $('endEyebrow').textContent=`${spectate?'Simulation · IA '+DIFF[diff].name:'Deux joueurs'} · ${MAP.name} · ${FMT.n} · ${fmt(time)} de combat`;
-    $('endTitle').textContent=winner?`Victoire des ${sideName(winner,1)}`:'Match nul';$('endTitle').className='result '+(winner?'win':'draw');$('endXp').hidden=true;}
-  else{$('endEyebrow').textContent=`${sideName(player)} · ${mode==='online'?(NET.ranked?'partie classée':TEAM?'en ligne · 2 contre 2':'en ligne'):(TEAM?'2 contre 2 · ':'')+'IA '+DIFF[diff].name} · ${MAP.name} · ${FMT.n} · ${fmt(time)} de combat`;
-    $('endTitle').textContent={win:'Victoire',lose:'Défaite',draw:'Match nul'}[res];$('endTitle').className='result '+res;
+    const ia=trad('IA {niveau}',{niveau:trad(DIFF[diff].name)}),dur=trad('{temps} de combat',{temps:fmt(time)});
+    $('endEyebrow').textContent=`${spectate?trad('Simulation')+' · '+ia:trad('Deux joueurs')} · ${MAP.name} · ${trad(FMT.n)} · ${dur}`;
+    $('endTitle').textContent=winner?trad('Victoire des {camp}',{camp:trad(sideName(winner,1))}):trad('Match nul');$('endTitle').className='result '+(winner?'win':'draw');$('endXp').hidden=true;}
+  else{const ia=trad('IA {niveau}',{niveau:trad(DIFF[diff].name)});$('endEyebrow').textContent=`${trad(sideName(player))} · ${mode==='online'?trad(NET.ranked?'partie classée':TEAM?'en ligne · 2 contre 2':'en ligne'):(TEAM?trad('2 contre 2')+' · ':'')+ia} · ${MAP.name} · ${trad(FMT.n)} · ${trad('{temps} de combat',{temps:fmt(time)})}`;
+    $('endTitle').textContent=trad({win:'Victoire',lose:'Défaite',draw:'Match nul'}[res]);$('endTitle').className='result '+res;
     const keepDiff=diff;if(mode==='online')diff=1;const a=award(winner,kind);diff=keepDiff;const g=GRADES[a.after],nx=GRADES[a.after+1];
-    $('endXp').innerHTML=`<span class="lbl" style="color:var(--gold)">Carrière · ${sideName(player)}</span><b>+${a.xp} XP${res==='win'?' · +1 point de victoire':''}</b>`+
-      (a.after>a.before?`<span>Promotion : vous passez <b style="font-size:inherit">${g.n}</b>${slotsOf(a.after)>slotsOf(a.before)?' et gagnez un emplacement d\'avantage':''}.</span>`:`<span>Grade : ${g.n}${nx?` · ${profile.xp[player]} / ${nx.xp} XP vers ${nx.n}`:' · grade maximal'}</span>`)+
-      `<span class="mini">${profile.pv} PV à dépenser dans la boutique.</span>`;$('endXp').hidden=false;
+    $('endXp').innerHTML=`<span class="lbl" style="color:var(--gold)">${trad('Carrière · {camp}',{camp:trad(sideName(player))})}</span><b>+${a.xp} XP${res==='win'?' · '+trad('+1 point de victoire'):''}</b>`+
+      (a.after>a.before?`<span>${trad(slotsOf(a.after)>slotsOf(a.before)?"Promotion : vous passez {grade} et gagnez un emplacement d'avantage.":'Promotion : vous passez {grade}.',{grade:`<b style="font-size:inherit">${trad(g.n)}</b>`})}</span>`:`<span>${trad('Grade : {grade}',{grade:trad(g.n)})}${nx?' · '+trad('{a} / {b} XP vers {grade}',{a:profile.xp[player],b:nx.xp,grade:trad(nx.n)}):' · '+trad('grade maximal')}</span>`)+
+      `<span class="mini">${trad('{n} PV à dépenser dans la boutique.',{n:profile.pv})}</span>`;$('endXp').hidden=false;
     if(mode==='online'&&NET.ranked)$('endXp').insertAdjacentHTML('beforeend',rkEndHTML(rankedFinish(res==='win'?'w':res==='draw'?'d':'l')));}
-  $('endText').textContent=why;
+  $('endText').textContent=tx(why);
   const cnt=s=>nodes.filter(n=>n.alive&&n.owner===s).length,abu=s=>ABL[s].filter(a=>P[s].ab[a.key]&&P[s].ab[a.key].u).length,tsum=s=>Object.values(P[s].tech||{}).reduce((a,b)=>a+(+b||0),0);
+  const liste=a=>a.map(x=>trad(x)).join(', ')||'—';
   const rows=[['Points de contrôle',Math.floor(P.A.score),Math.floor(P.B.score)],['Points tenus',cnt('A'),cnt('B')],['Prises',P.A.caps,P.B.caps],['Soldats perdus',Math.round(P.A.lost),Math.round(P.B.lost)],['Constructions',P.A.built,P.B.built],
     ['Améliorations',tsum('A'),tsum('B')],['Capacités débloquées',abu('A'),abu('B')],['Soutien final',Math.round(P.A.sup)+' %',Math.round(P.B.sup)+' %'],
-    ['Décisions',P.A.decisions.join(', ')||'—',P.B.decisions.join(', ')||'—'],['Avantages',P.A.perks.join(', ')||'—',P.B.perks.join(', ')||'—']];
-  $('endStats').innerHTML=`<span></span><span class="h" style="color:${C.atk}">Attaquants</span><span class="h" style="color:${C.def}">Défenseurs</span>`+rows.map(r=>`<span class="k">${esc(r[0])}</span><span>${esc(r[1])}</span><span>${esc(r[2])}</span>`).join('');
+    ['Décisions',liste(P.A.decisions),liste(P.B.decisions)],['Avantages',liste(P.A.perks),liste(P.B.perks)]];
+  $('endStats').innerHTML=`<span></span><span class="h" style="color:${C.atk}">${trad('Attaquants')}</span><span class="h" style="color:${C.def}">${trad('Défenseurs')}</span>`+rows.map(r=>`<span class="k">${esc(trad(r[0]))}</span><span>${esc(r[1])}</span><span>${esc(r[2])}</span>`).join('');
   $('againBtn').hidden=mode==='online';$('backEdBtn').hidden=!fromEditor;
   setTimeout(()=>{$('endOv').hidden=false;drawEndChart();},700);
 }
 function drawEndChart(){
   const c=$('endChart'),w=c.clientWidth,h=c.clientHeight,r=Math.min(window.devicePixelRatio||1,2);c.width=w*r;c.height=h*r;const g=c.getContext('2d');g.setTransform(r,0,0,r,0,0);g.clearRect(0,0,w,h);
-  if(series.length<2){g.fillStyle=C.muted;g.font=`500 13px ${FB}`;g.fillText('Partie trop courte pour un graphique.',8,20);return;}
-  const half=(w-24)/2,panels=[{x:0,t:'Soldats sur la carte',ia:1,ib:2},{x:half+24,t:'Points de contrôle',ia:3,ib:4}];
+  if(series.length<2){g.fillStyle=C.muted;g.font=`500 13px ${FB}`;g.fillText(trad('Partie trop courte pour un graphique.'),8,20);return;}
+  const half=(w-24)/2,panels=[{x:0,t:trad('Soldats sur la carte'),ia:1,ib:2},{x:half+24,t:trad('Points de contrôle'),ia:3,ib:4}];
   const tMax=series[series.length-1][0]||1;
   for(const p of panels){const top=22,bot=h-22,left=p.x+38,right=p.x+half;let vMax=1;for(const s of series)vMax=Math.max(vMax,s[p.ia],s[p.ib]);vMax=Math.ceil(vMax/50)*50||50;
     g.fillStyle=C.muted;g.font=`700 11px ${FD}`;g.textAlign='left';g.fillText(p.t.toUpperCase(),p.x,12);
@@ -2053,7 +2067,10 @@ const MODETXT={
   ranked:"Parties classées en 1 contre 1 : gagnez des points pour monter de rang, de Recrue à Maréchal. Le classement se met à jour en direct.",
   sim:"Deux IA s'affrontent. Vous regardez, en pause ou en accéléré."};
 function isLocked(){return spectate||(mode==='local'&&turn.phase!=='plan')||(NET.role==='guest'&&!NET.on);}
-function sidesTxt(m,s){const t=m.sides&&m.sides[s]&&m.sides[s].t;return t||(s==='A'?'Camp orange. Jeu offensif.':'Camp bleu. Jeu de position.');}
+// Sous-titre d'une carte personnelle, recalculé dans la langue du joueur
+function subPerso(m){const n=(m.nodes||[]).length,b=(m.bridges||[]).length,o=(m.obj||[]).length;
+  return [trad('Carte perso'),trad('{n} points',{n}),trad(b>1?'{n} ponts':'{n} pont',{n:b}),trad(o>1?'{n} objectifs':'{n} objectif',{n:o})].join(' · ');}
+function sidesTxt(m,s){const t=m.sides&&m.sides[s]&&m.sides[s].t;return trad(t||(s==='A'?'Camp orange. Jeu offensif.':'Camp bleu. Jeu de position.'));}
 function ensureMap(){const m=getMap(curMapId)||MAPS.lyon;curMapId=m.id;if(MAP!==m){loadMap(m);cam.set=false;fit(false);}}
 function selectMap(id){const m=getMap(id);if(!m)return;curMapId=id;try{localStorage.setItem(MAPSEL_KEY,id);}catch(e){}
   if(MAP!==m){loadMap(m);reset();cam.set=false;fit(false);}renderLobby();}
@@ -2064,32 +2081,32 @@ function renderLobby(){
   for(const m of all){
     const b=document.createElement('div');b.className='mapc';b.setAttribute('role','button');b.tabIndex=0;b.setAttribute('aria-pressed',String(m.id===curMapId));
     const c=document.createElement('canvas');c.width=192;c.height=132;try{drawThumb(c,m);}catch(e){}
-    const t=document.createElement('b');t.textContent=m.name;const s=document.createElement('span');s.textContent=m.sub||'';
+    const t=document.createElement('b');t.textContent=m.name;const s=document.createElement('span');s.textContent=m.custom?subPerso(m):trad(m.sub||'');
     b.append(c,t,s);
     if(m.custom){const r=document.createElement('div');r.className='mapc-acts';
-      const e=document.createElement('button');e.className='btn sm';e.textContent='Modifier';e.onclick=ev=>{ev.stopPropagation();edOpen(m,false);};
-      const d=document.createElement('button');d.className='btn sm';d.textContent='Supprimer';
+      const e=document.createElement('button');e.className='btn sm';e.textContent=trad('Modifier');e.onclick=ev=>{ev.stopPropagation();edOpen(m,false);};
+      const d=document.createElement('button');d.className='btn sm';d.textContent=trad('Supprimer');
       d.onclick=ev=>{ev.stopPropagation();if(d.dataset.arm){customMaps=customMaps.filter(x=>x.id!==m.id);saveCustomMaps();if(curMapId===m.id)selectMap('lyon');else renderLobby();}
-        else{d.dataset.arm='1';d.textContent='Confirmer ?';setTimeout(()=>{if(d.isConnected){delete d.dataset.arm;d.textContent='Supprimer';}},3000);}};
+        else{d.dataset.arm='1';d.textContent=trad('Confirmer ?');setTimeout(()=>{if(d.isConnected){delete d.dataset.arm;d.textContent=trad('Supprimer');}},3000);}};
       r.append(e,d);b.appendChild(r);}
     b.onclick=()=>selectMap(m.id);b.onkeydown=ev=>{if(ev.target===b&&(ev.key==='Enter'||ev.key===' ')){ev.preventDefault();selectMap(m.id);}};
     box.appendChild(b);}
-  const nb=document.createElement('button');nb.className='mapc new';nb.innerHTML='<b>+ Créer une carte</b><span>Éditeur de cartes</span>';nb.onclick=()=>edOpen(null);box.appendChild(nb);
+  const nb=document.createElement('button');nb.className='mapc new';nb.innerHTML=`<b>${trad('+ Créer une carte')}</b><span>${trad('Éditeur de cartes')}</span>`;nb.onclick=()=>edOpen(null);box.appendChild(nb);
   const m=getMap(curMapId);
-  $('mapDesc').textContent=m.desc||m.sub||'';
+  $('mapDesc').textContent=m.desc?trad(m.desc):m.custom?subPerso(m):trad(m.sub||'');
   $('campAt').textContent=sidesTxt(m,'A');$('campBt').textContent=sidesTxt(m,'B');
-  $('campAa').textContent=ABTXT.A;$('campBa').textContent=ABTXT.B;
+  $('campAa').textContent=trad(ABTXT.A);$('campBa').textContent=trad(ABTXT.B);
   setModeUI();
 }
 function setModeUI(){
   document.querySelectorAll('#modeSeg button').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.m===mode)));
   const solo=mode==='solo',loc=mode==='local',onl=mode==='online',sim=mode==='sim',rkd=mode==='ranked';
-  $('campSec').hidden=!(solo||onl);$('campH').textContent=onl?'Votre camp, si vous créez la partie':'Votre camp';
+  $('campSec').hidden=!(solo||onl);$('campH').textContent=trad(onl?'Votre camp, si vous créez la partie':'Votre camp');
   $('diffOpt').hidden=!(solo||sim);$('roundOpt').hidden=!loc;$('netSec').hidden=!onl;$('playActs').hidden=onl||rkd;
   $('teamOpt').hidden=!(solo||onl);$('rkSec').hidden=!rkd;$('fmtSeg').closest('.opt').hidden=rkd;document.querySelector('#startOv .lsec').classList.toggle('dim',rkd);
   document.querySelectorAll('#teamSeg button').forEach(b=>b.setAttribute('aria-pressed',String(+b.dataset.t===teamSize)));
-  $('tutBtn').hidden=!solo;$('goBtn').textContent=loc?'Lancer la partie à deux':sim?'Lancer la simulation':'Lancer la partie';
-  $('modeNote').textContent=MODETXT[mode]||'';
+  $('tutBtn').hidden=!solo;$('goBtn').textContent=trad(loc?'Lancer la partie à deux':sim?'Lancer la simulation':'Lancer la partie');
+  $('modeNote').textContent=trad(MODETXT[mode]||'');
 }
 document.querySelectorAll('#modeSeg button').forEach(b=>b.onclick=()=>{if(NET.role)return;mode=b.dataset.m;setModeUI();});
 document.querySelectorAll('#teamSeg button').forEach(b=>b.onclick=()=>{if(NET.role)return;teamSize=+b.dataset.t;setModeUI();});
@@ -2103,11 +2120,11 @@ function startLocal(){
   reset();tut=-1;turn={phase:'hand',who:'A',round:1,end:0,R:roundLen};beginPlay();paused=true;showHandoff();hud();
 }
 function showHandoff(){
-  const w=turn.who;$('hoEy').textContent=`Deux joueurs · ${MAP.name} · manche ${turn.round}`;
-  $('hoT').innerHTML=`Au tour des <span style="color:${OC[w]}">${sideName(w,1)}</span>`;
+  const w=turn.who;$('hoEy').textContent=`${trad('Deux joueurs')} · ${MAP.name} · ${trad('manche {n}',{n:turn.round})}`;
+  $('hoT').innerHTML=trad('Au tour des {camp}',{camp:`<span style="color:${OC[w]}">${trad(sideName(w,1))}</span>`});
   $('hoX').textContent=turn.round===1&&w==='A'
-    ?`Chacun donne ses ordres en secret, à son tour, pendant que l'autre ne regarde pas. Puis les deux plans se jouent ensemble pendant ${turn.R} secondes de jeu${time<BAL.prep?', juste après la préparation (jouée en accéléré)':''}. Les attaques ordonnées partent au début de la manche.`
-    :`Passez la souris aux ${sideName(w,1)}. L'autre joueur détourne les yeux : vos attaques prévues restent secrètes jusqu'à l'exécution.`;
+    ?trad(time<BAL.prep?"Chacun donne ses ordres en secret, à son tour, pendant que l'autre ne regarde pas. Puis les deux plans se jouent ensemble pendant {n} secondes de jeu, juste après la préparation (jouée en accéléré). Les attaques ordonnées partent au début de la manche.":"Chacun donne ses ordres en secret, à son tour, pendant que l'autre ne regarde pas. Puis les deux plans se jouent ensemble pendant {n} secondes de jeu. Les attaques ordonnées partent au début de la manche.",{n:turn.R})
+    :trad("Passez la souris aux {camp}. L'autre joueur détourne les yeux : vos attaques prévues restent secrètes jusqu'à l'exécution.",{camp:trad(sideName(w,1))});
   $('hoOv').hidden=false;banner.hidden=true;$('tip').hidden=true;
 }
 function beginPlan(){
@@ -2132,7 +2149,7 @@ function launchPlanned(prefix){
   for(const p of planned){const n=nodes[p.from],t=nodes[p.to];if(!n||!t||!n.alive||!t.alive||n.owner!==p.s)continue;const pa=path(n.i,t.i);if(pa&&dispatch(n,pa,Math.floor(n.troops*p.ratio),p.sec))launched[p.s]++;}
   planned=[];
   for(const s of['A','B'])if(ctrl[s]==='human'){const l=launched[s];
-    if(l)log(`${prefix} : ${l} attaque${l>1?'s':''} planifiée${l>1?'s':''} lancée${l>1?'s':''}`,'X',undefined,s);
+    if(l)log(MSG(l>1?'{debut} : {n} attaques planifiées lancées':'{debut} : {n} attaque planifiée lancée',{debut:prefix,n:l}),'X',undefined,s);
     else if(prefix==='Fin de la préparation')log('Fin de la préparation : en avant !','X',undefined,s);}
 }
 
@@ -2141,8 +2158,8 @@ OFFERS.marchand.n="Marchand d'armes";OFFERS.marchand.desc="Vos soldats attaquent
 OFFERS.ingenieurs.n='Ingénieurs suisses';OFFERS.ingenieurs.desc='Vos chantiers vont deux fois plus vite pendant 60 s.';
 function updateOffer(){const card=$('offerCard'),of=offerS[player];
   if(!of||spectate||!OFFERS[of.key]){card.hidden=true;return;}
-  const o=OFFERS[of.key];card.hidden=false;$('offerH').textContent=o.n;$('offerT').textContent=`${Math.ceil(of.t)} s`;$('offerX').textContent=o.desc;
-  const b=$('offerBtn');b.textContent=o.label;b.disabled=P[player].cr<o.cost||isLocked();}
+  const o=OFFERS[of.key];card.hidden=false;$('offerH').textContent=trad(o.n);$('offerT').textContent=`${Math.ceil(of.t)} s`;$('offerX').textContent=trad(o.desc);
+  const b=$('offerBtn');b.textContent=trad(o.label);b.disabled=P[player].cr<o.cost||isLocked();}
 $('offerBtn').onclick=()=>{const of=offerS[player];if(!of||isLocked()||!OFFERS[of.key])return;if(P[player].cr<OFFERS[of.key].cost)return;act('offer',{});if(NET.role==='guest')offerS[player]=null;hud();};
 
 /* ================= Interface selon le mode ================= */
@@ -2152,9 +2169,9 @@ function hudMode(){
   $('app').classList.toggle('locked',state==='play'&&!spectate&&isLocked());
   const sub=$('clockSub');
   if(mode==='local'){
-    if(turn.phase==='plan'){sub.textContent=`Manche ${turn.round} · ${sideName(player,1)}`;sub.className='clock-sub hot';}
-    else if(turn.phase==='exec'){sub.textContent=`Manche ${turn.round} · exécution ${Math.ceil(Math.max(0,turn.end-time))} s`+(paused?' · en pause':'');sub.className='clock-sub';}}
-  if(NET.on&&paused){sub.textContent='En pause';sub.className='clock-sub hot';}
+    if(turn.phase==='plan'){sub.textContent=`${trad('Manche {n}',{n:turn.round})} · ${trad(sideName(player,1))}`;sub.className='clock-sub hot';}
+    else if(turn.phase==='exec'){sub.textContent=`${trad('Manche {n}',{n:turn.round})} · ${trad('exécution {n} s',{n:Math.ceil(Math.max(0,turn.end-time))})}`+(paused?' · '+trad('en pause'):'');sub.className='clock-sub';}}
+  if(NET.on&&paused){sub.textContent=trad('En pause');sub.className='clock-sub hot';}
   const mp=isMulti()&&state==='play';$('autoGrp').hidden=mp;
   document.querySelectorAll('#speed button').forEach(b=>{b.classList.toggle('voting',!!(NET.on&&curVote()&&curVote().k==='speed'&&curVote().v===+b.dataset.s));});
   updateVoteCard();
@@ -2170,7 +2187,9 @@ const seatSec=k=>NET.team?+k[1]:0;
 function humanSeats(){return seatKeys().filter(k=>NET.seats[k]&&NET.seats[k].k!=='ai');}
 function seatOfPeer(p){return seatKeys().find(k=>NET.seats[k]&&NET.seats[k].k==='peer'&&NET.seats[k].peer===p)||null;}
 function mySeat(){return NET.mySeat||(player+(mySec||1));}
-function seatLabel(k){const s=k[0];return sideName(s)+(NET.team?` · secteur ${SECN[s][+k[1]]}`:'')+(k===NET.mySeat?' (vous)':'');}
+function seatLabel(k){const s=k[0];return trad(sideName(s))+(NET.team?' · '+trad('secteur {nom}',{nom:trad(SECN[s][+k[1]])}):'')+(k===NET.mySeat?' '+trad('(vous)'):'');}
+// Même étiquette, en modèle à traduire chez chaque joueur (journal partagé)
+function seatMsg(k){const s=k[0];return NET.team?MSG('{camp} · secteur {nom}',{camp:sideName(s),nom:SECN[s][+k[1]]}):sideName(s);}
 function applySeats(){
   TEAM=NET.team;ctrl={A:'ai',B:'ai'};aiSec={A:0,B:0};lvl={A:1,B:1};NET.rs=new Set();
   for(const s of['A','B']){const ks=seatKeys().filter(k=>k[0]===s),hum=ks.filter(k=>NET.seats[k]&&NET.seats[k].k!=='ai');
@@ -2209,15 +2228,15 @@ function randCode(){const a='abcdefghjkmnpqrstuvwxyz23456789';let s='';for(let i
 /* ---------- Salle d'attente ---------- */
 function seatListHTML(view){
   const rows=['A','B'].map(s=>{const ks=seatKeys().filter(k=>k[0]===s);
-    return `<div class="seatcol"><b style="color:${OC[s]}">${sideName(s)}</b>${ks.map(k=>{const v=view[k];const who=v==='me'?'Vous':v==='host'?'Hôte':v==='peer'?'Joueur':'<span class="mini">IA (place libre)</span>';
-      return `<span>${NET.team?`<i class="mini">${k[1]==='1'?'Secteur 1':'Secteur 2'}</i> `:''}${who}</span>`;}).join('')}</div>`;}).join('');
+    return `<div class="seatcol"><b style="color:${OC[s]}">${trad(sideName(s))}</b>${ks.map(k=>{const v=view[k];const who=v==='me'?trad('Vous'):v==='host'?trad('Hôte'):v==='peer'?trad('Joueur'):`<span class="mini">${trad('IA (place libre)')}</span>`;
+      return `<span>${NET.team?`<i class="mini">${trad(k[1]==='1'?'Secteur 1':'Secteur 2')}</i> `:''}${who}</span>`;}).join('')}</div>`;}).join('');
   return `<div class="seats">${rows}</div>`;
 }
 function netLobbyView(forPeer){const v={};for(const k of seatKeys()){const s=NET.seats[k];v[k]=!s||s.k==='ai'?'ai':s.k==='host'?(forPeer?'host':'me'):(forPeer&&s.peer===forPeer?'me':'peer');}return v;}
 function netLobbyUI(){
   if(NET.role!=='host'||NET.started)return;const n=humanSeats().length,tot=seatKeys().length;
-  const head=NET.ranked?'Partie classée : connexion avec votre adversaire…':`Code de la partie : <b class="code">${NET.code.toUpperCase()}</b> · donnez-le ${NET.team?'aux autres joueurs':'à votre adversaire'}.`;
-  netStatus(`${head}<br>${NET.team?`${n}/${tot} joueurs.${n<tot?" Les places libres seront tenues par l'IA.":''}`:n<2?'En attente de votre adversaire…':'Adversaire trouvé.'}${NET.team?seatListHTML(netLobbyView(null)):''}`,true,NET.team&&n>=2&&!NET.launched);
+  const head=NET.ranked?trad('Partie classée : connexion avec votre adversaire…'):trad(NET.team?'Code de la partie : {code} · donnez-le aux autres joueurs.':'Code de la partie : {code} · donnez-le à votre adversaire.',{code:`<b class="code">${NET.code.toUpperCase()}</b>`});
+  netStatus(`${head}<br>${NET.team?trad('{n}/{t} joueurs.',{n,t:tot})+(n<tot?' '+trad("Les places libres seront tenues par l'IA."):''):trad(n<2?'En attente de votre adversaire…':'Adversaire trouvé.')}${NET.team?seatListHTML(netLobbyView(null)):''}`,true,NET.team&&n>=2&&!NET.launched);
 }
 function netLobbyBroadcast(){if(NET.role!=='host'||!NET.room||NET.started)return;const seats={};for(const k of seatKeys()){const s=NET.seats[k];seats[k]=!s||s.k==='ai'?null:s.k==='host'?'host':s.peer;}
   NET.room.emit('lobby',{team:NET.team?1:0,seats}).catch(()=>{});}
@@ -2225,10 +2244,10 @@ function freeSeat(){const me=NET.mySeat[0],en=enemyOf(me);const order=NET.team?[
 
 /* ---------- Hôte ---------- */
 async function netHost(){
-  if(NET.role)return;netStatus('Ouverture de la partie…');const api=await netApi();
-  if(!api){netStatus(NET_NA);return;}
+  if(NET.role)return;netStatus(trad('Ouverture de la partie…'));const api=await netApi();
+  if(!api){netStatus(trad(NET_NA));return;}
   const code=randCode();let r;
-  try{r=await api.join('bdl-'+code);}catch(e){netStatus(`Impossible d'ouvrir la partie (${esc(e&&e.code||'erreur')}).`);return;}
+  try{r=await api.join('bdl-'+code);}catch(e){netStatus(trad("Impossible d'ouvrir la partie ({erreur}).",{erreur:esc(trad(e&&e.code||'erreur'))}));return;}
   netSetupHost(r,code,{team:teamSize===2,ranked:false,side:chosen,mapId:curMapId,fmt:fmtIdx});
 }
 function netSetupHost(r,code,o){
@@ -2256,7 +2275,7 @@ function netSendStart(){const m=getMap(NET.mapId)||MAPS.lyon,seats={};
   chunkEmit('start',{map:m.custom?m:m.id,fmt:NET.fmt,team:NET.team?1:0,ranked:NET.ranked?1:0,seats});}
 function netLaunch(){
   if(NET.launched||NET.role!=='host')return;if(humanSeats().length<2)return;NET.launched=true;NET.lastStart=performance.now();netSendStart();
-  const m=getMap(NET.mapId)||MAPS.lyon;netStatus(`Chargement de ${esc(m.name)}…`,true);
+  const m=getMap(NET.mapId)||MAPS.lyon;netStatus(trad('Chargement de {nom}…',{nom:esc(m.name)}),true);
   clearTimeout(NET.rto);NET.rto=setTimeout(()=>{if(NET.started||NET.role!=='host')return;
     for(const k of seatKeys())if(NET.seats[k].k==='peer'&&!NET.ready[k])NET.seats[k]={k:'ai'};
     if(humanSeats().length<2){NET.launched=false;if(NET.ranked){rkMatchFailed();return;}netLobbyUI();netLobbyBroadcast();return;}
@@ -2266,8 +2285,8 @@ function netBeginHost(){
   if(NET.started)return;clearTimeout(NET.rto);
   NET.started=true;NET.on=true;mode='online';spectate=false;fromEditor=false;curMapId=NET.mapId;ensureMap();fmtIdx=NET.fmt;FMT=FORMATS[fmtIdx];
   player=NET.mySeat[0];mySec=seatSec(NET.mySeat);applySeats();reset();tut=-1;beginPlay();netStatus('');NET.vote=null;NET.voteCd={};NET.pauseT=0;NET.lastRanked=NET.ranked;
-  log(`Partie en ligne sur ${MAP.name}${NET.team?' · 2 contre 2':''}${NET.ranked?' · classée':''}. 75 s de préparation.`,'X');
-  if(TEAM)for(const s of['A','B'])if(ctrl[s]==='human')log(`Secteurs : ${SECN[s][1]} et ${SECN[s][2]}. Le QG, le trésor et les capacités sont communs.`,'X',undefined,s);
+  log(MSG(NET.team?'Partie en ligne sur {ville} · 2 contre 2{classee}. 75 s de préparation.':'Partie en ligne sur {ville}{classee}. 75 s de préparation.',{ville:MAP.name,classee:NET.ranked?MSG(' · classée'):''}),'X');
+  if(TEAM)for(const s of['A','B'])if(ctrl[s]==='human')log(MSG('Secteurs : {a} et {b}. Le QG, le trésor et les capacités sont communs.',{a:SECN[s][1],b:SECN[s][2]}),'X',undefined,s);
   const q=qgOf(player);sel.clear();if(q)sel.add(q.i);NET.t=1;if(NET.ranked)rankedBegin();hud();
 }
 function netPeerLeft(p){
@@ -2278,31 +2297,31 @@ function netPeerLeft(p){
     if(NET.launched&&humanSeats().length<2){NET.launched=false;clearTimeout(NET.rto);}
     netLobbyUI();netLobbyBroadcast();if(NET.launched&&netAllReady())netBeginHost();return;}
   if(state!=='play')return;
-  applySeats();log(`${seatLabel(k).replace(' (vous)','')} a quitté la partie : l'IA prend le relais.`,'X');voteCheck();
+  applySeats();log(MSG("{joueur} a quitté la partie : l'IA prend le relais.",{joueur:seatMsg(k)}),'X');voteCheck();
   if(NET.ranked){endGame(player,'Votre adversaire a quitté la partie : victoire par abandon.');return;}
   if(!seatKeys().some(x=>NET.seats[x].k==='peer')){paused=true;
-    showNetOv('Les autres joueurs ont quitté la partie','Vous pouvez la finir contre l\'IA, ou revenir à l\'accueil.',[
-      ["Finir contre l'IA",()=>{const r=NET.room;const keep={T:TEAM,s:mySec,a:{...aiSec},c:{...ctrl}};netReset();try{r&&r.leave().catch(()=>{});}catch(e){}
+    showNetOv(trad('Les autres joueurs ont quitté la partie'),trad("Vous pouvez la finir contre l'IA, ou revenir à l'accueil."),[
+      [trad("Finir contre l'IA"),()=>{const r=NET.room;const keep={T:TEAM,s:mySec,a:{...aiSec},c:{...ctrl}};netReset();try{r&&r.leave().catch(()=>{});}catch(e){}
         mode='solo';TEAM=keep.T;mySec=keep.s;aiSec=keep.a;ctrl=keep.c;$('netOv').hidden=true;paused=false;setSideTag();hud();}],
-      ["Revenir à l'accueil",()=>{$('netOv').hidden=true;netLeave();state='menu';showStart();}]]);}
+      [trad("Revenir à l'accueil"),()=>{$('netOv').hidden=true;netLeave();state='menu';showStart();}]]);}
 }
 
 /* ---------- Invité ---------- */
 async function netJoin(){
   if(NET.role)return;const code=($('netCode').value||'').trim().toLowerCase().replace(/[^a-z0-9]/g,'');
-  if(code.length!==5){netStatus("Entrez le code à 5 caractères donné par l'hôte.");return;}
-  netStatus('Connexion…');const api=await netApi();if(!api){netStatus(NET_NA);return;}
-  let r;try{r=await api.join('bdl-'+code);}catch(e){netStatus(`Impossible de rejoindre (${esc(e&&e.code||'erreur')}).`);return;}
-  netSetupGuest(r,code,{});netStatus('Recherche de la partie…',true);
+  if(code.length!==5){netStatus(trad("Entrez le code à 5 caractères donné par l'hôte."));return;}
+  netStatus(trad('Connexion…'));const api=await netApi();if(!api){netStatus(trad(NET_NA));return;}
+  let r;try{r=await api.join('bdl-'+code);}catch(e){netStatus(trad('Impossible de rejoindre ({erreur}).',{erreur:esc(trad(e&&e.code||'erreur'))}));return;}
+  netSetupGuest(r,code,{});netStatus(trad('Recherche de la partie…'),true);
 }
 function netSetupGuest(r,code,o){
   NET.room=r;NET.role='guest';NET.code=code;NET.expect=o.expect||null;NET.expectBy=o.expectBy||null;NET.ranked=!!o.ranked;
   const fromHost=m=>!m.sameTab&&(!NET.expect||m.peer===NET.expect)&&(!NET.expectBy||!m.by||m.by===NET.expectBy);
   r.on('lobby',m=>{if(!fromHost(m)||NET.started)return;const d=m.data||{};if(!d.seats||typeof d.seats!=='object')return;NET.team=!!d.team;
     const me=myPeer(),v={};for(const k of seatKeys()){const x=d.seats[k];v[k]=x==null?'ai':x==='host'?'host':x===me?'me':'peer';}
-    netStatus(`Vous êtes dans la salle d'attente. L'hôte lancera la partie.${seatListHTML(v)}`,true);});
+    netStatus(trad("Vous êtes dans la salle d'attente. L'hôte lancera la partie.")+seatListHTML(v),true);});
   r.on('start',m=>{if(!fromHost(m)||NET.started)return;const o2=chunkRecv(NET.buf,m.data);if(!o2)return;NET.hostPeer=m.peer;netGuestStart(o2);});
-  r.on('full',m=>{if(!fromHost(m)||NET.started)return;const d=m.data||{};if(d.to&&d.to!==myPeer())return;netLeave();netStatus('Cette partie est complète ou déjà commencée.');if(o.ranked)rkMatchFailed();});
+  r.on('full',m=>{if(!fromHost(m)||NET.started)return;const d=m.data||{};if(d.to&&d.to!==myPeer())return;netLeave();netStatus(trad('Cette partie est complète ou déjà commencée.'));if(o.ranked)rkMatchFailed();});
   r.on('snap',m=>{if(m.sameTab||m.peer!==NET.hostPeer||!NET.on)return;const o2=chunkRecv(NET.sbuf,m.data);if(o2)netApply(o2);});
   r.on('end',m=>{if(m.sameTab||m.peer!==NET.hostPeer)return;const o2=chunkRecv(NET.ebuf,m.data);if(o2)netGuestEnd(o2);});
   r.on('bye',m=>{if(!m.sameTab&&m.peer===NET.hostPeer)netHostGone();});
@@ -2313,11 +2332,11 @@ function netHello(){if(NET.role!=='guest'||NET.started||!NET.room)return;NET.roo
 function netGuestStart(o){
   const me=myPeer();if(!o.seats||typeof o.seats!=='object')return;NET.team=!!o.team;NET.ranked=!!o.ranked;
   const mine=seatKeys().find(k=>o.seats[k]===me);
-  if(!mine){netLeave();netStatus('La partie a commencé sans vous.');return;}
+  if(!mine){netLeave();netStatus(trad('La partie a commencé sans vous.'));return;}
   let m=null;
   if(typeof o.map==='string')m=MAPS[o.map]||null;
   else if(o.map&&typeof o.map==='object'){try{m=sanitizeMap(o.map);m.id='net-'+m.id;}catch(e){m=null;}}
-  if(!m||!m.hq||!m.hq.A||!m.hq.B){netLeave();netStatus("La carte de l'hôte est illisible.");return;}
+  if(!m||!m.hq||!m.hq.A||!m.hq.B){netLeave();netStatus(trad("La carte de l'hôte est illisible."));return;}
   NET.seats={};for(const k of seatKeys()){const x=o.seats[k];NET.seats[k]=x==null?{k:'ai'}:x==='host'?{k:'host'}:{k:'peer',peer:x};}
   NET.mySeat=mine;NET.started=true;NET.on=true;mode='online';spectate=false;fromEditor=false;NET.lastRanked=NET.ranked;
   loadMap(m);cam.set=false;fit(false);fmtIdx=FORMATS[o.fmt]?o.fmt:1;FMT=FORMATS[fmtIdx];
@@ -2328,14 +2347,14 @@ function netHostGone(){
   if(NET.role!=='guest')return;
   if(NET.started&&NET.on&&state==='play'){
     if(NET.ranked){endGame(player,"Votre adversaire a quitté la partie : victoire par abandon.",undefined,true);netLeave();return;}
-    paused=true;showNetOv("L'hôte a quitté la partie",'La partie s\'arrête ici.',[["Revenir à l'accueil",()=>{$('netOv').hidden=true;netLeave();state='menu';showStart();}]]);}
-  else if(!NET.started){const rk=NET.ranked;netLeave();netStatus("L'hôte a fermé la partie.");if(rk)rkMatchFailed();}
+    paused=true;showNetOv(trad("L'hôte a quitté la partie"),trad("La partie s'arrête ici."),[[trad("Revenir à l'accueil"),()=>{$('netOv').hidden=true;netLeave();state='menu';showStart();}]]);}
+  else if(!NET.started){const rk=NET.ranked;netLeave();netStatus(trad("L'hôte a fermé la partie."));if(rk)rkMatchFailed();}
 }
 
 /* ---------- Votes (hôte) ---------- */
 const SPEEDS=[0.25,0.5,1,2,3],spdTxt=v=>({0.25:'×¼',0.5:'×½',1:'×1',2:'×2',3:'×3'})[v]||'×1';
 function voteNeed(){return Math.floor(humanSeats().length/2)+1;}
-function voteTxt(v){return v.k==='speed'?`de passer la vitesse à ${spdTxt(v.v)}`:v.k==='pause'?'de mettre la partie en pause':'de reprendre la partie';}
+function voteTxt(v){return v.k==='speed'?MSG('de passer la vitesse à {v}',{v:spdTxt(v.v)}):v.k==='pause'?'de mettre la partie en pause':'de reprendre la partie';}
 function voteStart(seat,a){
   if(NET.role!=='host'||!NET.on||!seat||!humanSeats().includes(seat)||NET.vote)return false;
   if((NET.voteCd[seat]||0)>performance.now())return false;
@@ -2343,38 +2362,38 @@ function voteStart(seat,a){
   if(k==='speed'){v=+a.v;if(!SPEEDS.includes(v)||v===speed)return false;}
   else if(k==='pause'){if(paused)return false;}else if(k==='resume'){if(!paused)return false;}else return false;
   NET.vote={id:++NET.vid,k,v,by:seat,yes:new Set([seat]),no:new Set(),t:VOTE_T};
-  log(`Vote : ${seatLabel(seat).replace(' (vous)','')} propose ${voteTxt(NET.vote)}`,'X');voteCheck();return true;
+  log(MSG('Vote : {joueur} propose {quoi}',{joueur:seatMsg(seat),quoi:voteTxt(NET.vote)}),'X');voteCheck();return true;
 }
 function voteCast(seat,a){const v=NET.vote;if(NET.role!=='host'||!v||!seat||a.id!==v.id||!humanSeats().includes(seat))return false;v.yes.delete(seat);v.no.delete(seat);(a.y?v.yes:v.no).add(seat);voteCheck();return true;}
 function voteCheck(){const v=NET.vote;if(!v)return;const hs=humanSeats();for(const s of[...v.yes])if(!hs.includes(s))v.yes.delete(s);for(const s of[...v.no])if(!hs.includes(s))v.no.delete(s);
   const need=voteNeed();
   if(v.yes.size>=need){NET.vote=null;voteApply(v);}
-  else if(hs.length-v.no.size<need){NET.vote=null;NET.voteCd[v.by]=performance.now()+15000;log(`Vote rejeté : proposition ${voteTxt(v)}`,'X');}}
+  else if(hs.length-v.no.size<need){NET.vote=null;NET.voteCd[v.by]=performance.now()+15000;log(MSG('Vote rejeté : proposition {quoi}',{quoi:voteTxt(v)}),'X');}}
 function voteApply(v){
-  if(v.k==='speed'){setSpeed(v.v);log(`Vote adopté : vitesse ${spdTxt(v.v)}`,'X');}
-  else if(v.k==='pause'){paused=true;NET.pauseT=PAUSE_MAX;log(`Vote adopté : pause (${PAUSE_MAX} s au plus)`,'X');}
+  if(v.k==='speed'){setSpeed(v.v);log(MSG('Vote adopté : vitesse {v}',{v:spdTxt(v.v)}),'X');}
+  else if(v.k==='pause'){paused=true;NET.pauseT=PAUSE_MAX;log(MSG('Vote adopté : pause ({n} s au plus)',{n:PAUSE_MAX}),'X');}
   else{paused=false;NET.pauseT=0;log('Vote adopté : reprise de la partie','X');}hud();}
 function voteTick(dt){
-  if(NET.vote){NET.vote.t-=dt;if(NET.vote.t<=0){const v=NET.vote;NET.vote=null;NET.voteCd[v.by]=performance.now()+15000;log(`Vote sans majorité : proposition ${voteTxt(v)} abandonnée`,'X');}}
+  if(NET.vote){NET.vote.t-=dt;if(NET.vote.t<=0){const v=NET.vote;NET.vote=null;NET.voteCd[v.by]=performance.now()+15000;log(MSG('Vote sans majorité : proposition {quoi} abandonnée',{quoi:voteTxt(v)}),'X');}}
   if(paused&&NET.pauseT>0){NET.pauseT-=dt;if(NET.pauseT<=0){NET.pauseT=0;paused=false;log('Fin de la pause : reprise automatique','X');}}
 }
 function voteView(){const v=NET.vote;if(!v)return null;return{id:v.id,k:v.k,v:v.v,by:v.by,y:[...v.yes],n:[...v.no],t:Math.ceil(v.t),need:voteNeed()};}
 function curVote(){return NET.role==='host'?voteView():NET.vview;}
-function proposeVote(k,v){if(!NET.on||state!=='play')return;const cv0=curVote();if(cv0){toast('Un vote est déjà en cours');return;}
-  if(NET.role==='guest'){netCmd('vote',{k,v});toast('Proposition envoyée aux autres joueurs');return;}
-  if((NET.voteCd[NET.mySeat]||0)>performance.now()){toast('Attendez un peu avant de proposer un nouveau vote');return;}
+function proposeVote(k,v){if(!NET.on||state!=='play')return;const cv0=curVote();if(cv0){toast(trad('Un vote est déjà en cours'));return;}
+  if(NET.role==='guest'){netCmd('vote',{k,v});toast(trad('Proposition envoyée aux autres joueurs'));return;}
+  if((NET.voteCd[NET.mySeat]||0)>performance.now()){toast(trad('Attendez un peu avant de proposer un nouveau vote'));return;}
   applyAct(player,'vote',{k,v},mySec,NET.mySeat);hud();}
 function castVote(y){const v=curVote();if(!v)return;if(NET.role==='guest'){netCmd('ballot',{id:v.id,y:!!y});(y?v.y:v.n).push(NET.mySeat);}else applyAct(player,'ballot',{id:v.id,y:!!y},mySec,NET.mySeat);updateVoteCard();}
 function updateVoteCard(){
   const c=$('voteCard');const v=NET.on&&state==='play'?curVote():null;
   if(!v){c.hidden=true;if(NET.on&&paused&&state==='play'){c.hidden=false;c.className='votecard paused';
-      $('vcT').textContent='Partie en pause';$('vcX').textContent=NET.role==='host'?`Reprise automatique dans ${Math.ceil(NET.pauseT)} s, ou plus tôt par vote.`:`Reprise automatique dans ${Math.ceil(NET.pt||0)} s, ou plus tôt par vote.`;
-      $('vcY').hidden=false;$('vcY').textContent='Proposer la reprise';$('vcN').hidden=true;$('vcY').onclick=()=>proposeVote('resume');}
+      $('vcT').textContent=trad('Partie en pause');$('vcX').textContent=trad('Reprise automatique dans {n} s, ou plus tôt par vote.',{n:Math.ceil(NET.role==='host'?NET.pauseT:(NET.pt||0))});
+      $('vcY').hidden=false;$('vcY').textContent=trad('Proposer la reprise');$('vcN').hidden=true;$('vcY').onclick=()=>proposeVote('resume');}
     return;}
   c.hidden=false;c.className='votecard';const mine=v.y.includes(NET.mySeat)||v.n.includes(NET.mySeat);
-  $('vcT').textContent=`Vote · ${v.k==='speed'?'vitesse '+spdTxt(v.v):v.k==='pause'?'pause':'reprise'}`;
-  $('vcX').textContent=`${seatLabel(v.by)} propose ${voteTxt(v)}. ${v.y.length} pour, ${v.n.length} contre · ${v.need} voix requises · ${v.t} s`;
-  $('vcY').hidden=mine;$('vcN').hidden=mine;$('vcY').textContent='Pour';$('vcN').textContent='Contre';$('vcY').onclick=()=>castVote(true);$('vcN').onclick=()=>castVote(false);
+  $('vcT').textContent=`${trad('Vote')} · ${v.k==='speed'?trad('vitesse {v}',{v:spdTxt(v.v)}):trad(v.k==='pause'?'pause':'reprise')}`;
+  $('vcX').textContent=trad('{joueur} propose {quoi}. {p} pour, {c} contre · {n} voix requises · {t} s',{joueur:seatLabel(v.by),quoi:tx(voteTxt(v)),p:v.y.length,c:v.n.length,n:v.need,t:v.t});
+  $('vcY').hidden=mine;$('vcN').hidden=mine;$('vcY').textContent=trad('Pour');$('vcN').textContent=trad('Contre');$('vcY').onclick=()=>castVote(true);$('vcN').onclick=()=>castVote(false);
 }
 
 /* ---------- Instantanés ---------- */
@@ -2405,7 +2424,7 @@ function netApply(o){
   squads=(Array.isArray(o.q)?o.q:[]).filter(a=>Array.isArray(a)&&Array.isArray(a[3])&&a[3].length>1&&a[3].every(okIdx)&&(a[1]==='A'||a[1]==='B'))
     .map(a=>({id:a[0],owner:a[1],n:+a[2]||0,path:a[3],seg:Math.max(0,Math.min(a[4]|0,a[3].length-2)),d:+a[5]||0,v:+a[6]||0}));
   for(const s of['A','B'])if(o.P&&o.P[s]&&typeof o.P[s]==='object')Object.assign(P[s],o.P[s]);
-  mods=(Array.isArray(o.m)?o.m:[]).map(a=>({s:a[0],stat:String(a[1]),mult:+a[2]||1,t:+a[3]||0,T:+a[3]||0,label:String(a[4]||''),good:!!a[5],river:a[6]||undefined,nodes:Array.isArray(a[7])?a[7]:undefined}));
+  mods=(Array.isArray(o.m)?o.m:[]).map(a=>({s:a[0],stat:String(a[1]),mult:+a[2]||1,t:+a[3]||0,T:+a[3]||0,label:okMsg(a[4]||''),good:!!a[5],river:a[6]||undefined,nodes:Array.isArray(a[7])?a[7]:undefined}));
   const g=player,pv=o.pv&&typeof o.pv==='object'&&o.pv[g]&&typeof o.pv[g]==='object'?o.pv[g]:{};
   decP[g]=pv.dp&&Array.isArray(pv.dp.ids)?pv.dp:null;offerS[g]=pv.of&&OFFERS[pv.of.key]?pv.of:null;
   planned=Array.isArray(pv.pl)?pv.pl.filter(p=>p&&okIdx(p.from)&&okIdx(p.to)):[];
@@ -2413,9 +2432,9 @@ function netApply(o){
   drops=(Array.isArray(o.dr)?o.dr:[]).filter(a=>okIdx(a[0])).map(a=>({n:a[0],t:+a[1]||0}));
   for(const f of Array.isArray(o.fx)?o.fx:[])if(Array.isArray(f))effects.push({type:String(f[0]),x:+f[1]||0,y:+f[2]||0,c:String(f[3]||C.text),x2:f[4],y2:f[5],t:+f[6]||0});
   for(const e of Array.isArray(o.ev)?o.ev:[]){if(!Array.isArray(e))continue;
-    if(e[0]==='l'){if(!e[4]||e[4]===player)pushFeed(String(e[1]),String(e[2]||''),okIdx(e[3])?e[3]:undefined,player);}
-    else if(e[0]==='f'&&okIdx(e[1])){if(!e[4]||e[4]===player)pushFloat(e[1],String(e[2]),String(e[3]||C.gold));}
-    else if(e[0]==='b'){const ok=e[4]&&OFFERS[e[4]]&&offerS[player]&&offerS[player].key===e[4];showBanner(String(e[1]),String(e[2]),String(e[3]),ok?OFFERS[e[4]].label:null);}}
+    if(e[0]==='l'){if(!e[4]||e[4]===player)pushFeed(okMsg(e[1]),String(e[2]||''),okIdx(e[3])?e[3]:undefined,player);}
+    else if(e[0]==='f'&&okIdx(e[1])){if(!e[4]||e[4]===player)pushFloat(e[1],okMsg(e[2]),String(e[3]||C.gold));}
+    else if(e[0]==='b'){const ok=e[4]&&OFFERS[e[4]]&&offerS[player]&&offerS[player].key===e[4];showBanner(okMsg(e[1]),okMsg(e[2]),okMsg(e[3]),ok?OFFERS[e[4]].label:null);}}
   updWall();army={A:0,B:0};for(const n of nodes)if(mineN(n))army[n.owner]+=n.troops;for(const q of squads)army[q.owner]+=q.n;
 }
 function netGuestTick(dt){
@@ -2432,7 +2451,7 @@ function netGuestEnd(o){
   for(const s of['A','B'])if(o.P&&o.P[s]&&typeof o.P[s]==='object'){const v=o.P[s];if(Array.isArray(v.decisions))P[s].decisions=v.decisions.map(String);if(Array.isArray(v.perks))P[s].perks=v.perks.map(String);
     for(const k of['lost','caps','built','score','sup'])if(Number.isFinite(+v[k]))P[s][k]=+v[k];if(v.tech&&typeof v.tech==='object')P[s].tech=v.tech;}
   if(Array.isArray(o.series))series=o.series.filter(Array.isArray);
-  endGame(o.w==='A'||o.w==='B'?o.w:null,String(o.why||''),o.kind==='qg'?'qg':undefined,true);
+  endGame(o.w==='A'||o.w==='B'?o.w:null,okMsg(o.why||''),o.kind==='qg'?'qg':undefined,true);
 }
 function showNetOv(t,x,acts){$('netOvT').textContent=t;$('netOvX').textContent=x;const box=$('netOvActs');box.innerHTML='';
   acts.forEach(([l,f],i)=>{const b=document.createElement('button');b.textContent=l;if(!i)b.className='primary';b.onclick=f;box.appendChild(b);});$('netOv').hidden=false;}
@@ -2459,7 +2478,7 @@ function rkClean(id,d){d=d&&typeof d==='object'?d:{};const pend=d.pend&&typeof d
   return{id:String(id),rp:rkNum(d.rp,RK_START,0,5000),w:rkNum(d.w,0,0,1e6),l:rkNum(d.l,0,0,1e6),dr:rkNum(d.dr,0,0,1e6),g:rkNum(d.g,0,0,1e6),peak:rkNum(d.peak,RK_START,0,5000),
     cs:typeof d.cs==='string'?d.cs.replace(/[\u0000-\u001f\u007f-\u009f​-‏‪-‮⁦-⁩]/g,'').trim().slice(0,20):'',pend};}
 const rkMe=()=>RK.doc||{id:RK.me,rp:RK_START,w:0,l:0,dr:0,g:0,peak:RK_START,cs:'',pend:null};
-function rkName(d){if(!d)return 'Joueur';if(d.cs)return d.cs;const p=RK.names[d.id];return p||('Joueur '+String(d.id).slice(-4).toUpperCase());}
+function rkName(d){if(!d)return trad('Joueur');if(d.cs)return d.cs;const p=RK.names[d.id];return p||trad('Joueur {id}',{id:String(d.id).slice(-4).toUpperCase()});}
 async function rkResolveNames(){if(!RK.user||typeof RK.user.profiles!=='function')return;const ids=RK.lb.map(d=>d.id).filter(id=>!(id in RK.names)).slice(0,60);if(RK.me&&!(RK.me in RK.names))ids.push(RK.me);if(!ids.length)return;
   try{const ps=await RK.user.profiles(ids);for(const id of ids){RK.names[id]=ps&&ps[id]&&ps[id].name||'';}rkRender();}catch(e){}}
 function rkWrite(body){if(!RK.db||!RK.me)return Promise.resolve(false);const doc={rp:body.rp,w:body.w,l:body.l,dr:body.dr,g:body.g,peak:body.peak,cs:body.cs||'',t:Date.now()};if(body.pend)doc.pend=body.pend;
@@ -2479,9 +2498,10 @@ let rkStaleDone=false;
 function rkStalePend(){const d=RK.doc;if(rkStaleDone||!d||!d.pend||RK.match)return;if(Date.now()-d.pend.t<45*60*1000)return;rkStaleDone=true;rkWrite({...d,pend:null});}
 function rkReady(){return !!(RK.db&&RK.me&&RK.lobby);}
 function rkStatus(t){RK.st=t;rkRender();}
+
 function rkQueue(){
   if(NET.role)return;if(!rkReady()){rkStatus(NET_NA);return;}
-  RK.q=true;RK.qt=Date.now();RK.pk='';rkStatus('Recherche d\'un adversaire…');
+  RK.q=true;RK.qt=Date.now();RK.pk='';rkStatus("Recherche d'un adversaire…");
   RK.lobby.presence({rq:1,qt:RK.qt,rp:rkMe().rp}).catch(()=>{});
   clearInterval(RK.tick);RK.tick=setInterval(()=>{if(!RK.q){clearInterval(RK.tick);return;}rkPair();rkRender();},1000);
 }
@@ -2516,7 +2536,7 @@ function rankedBegin(){
   clearTimeout(RK.to);RK.st='';if(RK.lobby)RK.lobby.presence({rq:null,qt:null,rp:null}).catch(()=>{});if(!RK.db||!RK.me){RK.match=null;return;}const d=rkMe(),opp=RK.last?RK.last.oppRp:RK_START,dl=rkDelta(d.rp,opp,d.g);
   RK.match={cur:d.rp,opp,dl,base:{...d}};
   rkWrite({...d,rp:Math.max(0,d.rp+dl.l),l:d.l+1,g:d.g+1,pend:{t:Date.now(),w:d.rp+dl.w,d:Math.max(0,d.rp+dl.d)}});
-  log(`Partie classée : victoire +${dl.w} pts, défaite ${dl.l} pts. Quitter la partie compte comme une défaite.`,'X',undefined,player);
+  log(MSG('Partie classée : victoire +{w} pts, défaite {l} pts. Quitter la partie compte comme une défaite.',{w:dl.w,l:dl.l}),'X',undefined,player);
 }
 function rankedFinish(res){
   const m=RK.match;if(!m)return null;RK.match=null;const b=m.base;
@@ -2525,33 +2545,35 @@ function rankedFinish(res){
   rkWrite(body);return{before:m.cur,after:rp,delta:rp-m.cur};
 }
 function rkEndHTML(r){if(!r)return '';const a=rankOf(r.before),b=rankOf(r.after);const up=b.i>a.i||(b.i===a.i&&b.d>a.d),down=b.i<a.i||(b.i===a.i&&b.d<a.d);
-  return `<div class="rkend">${rkEmblem(r.after,44)}<div><span class="lbl" style="color:var(--gold)">Partie classée</span><b>${r.delta>=0?'+':'−'}${Math.abs(r.delta)} points · ${r.after} pts</b><span>${up?`Promotion : <b style="font-size:inherit;color:${b.c}">${b.full}</b>`:down?`Rétrogradation : ${b.full}`:b.full}${b.next?` · ${b.next-r.after} pts avant le rang suivant`:''}</span></div></div>`;}
+  return `<div class="rkend">${rkEmblem(r.after,44)}<div><span class="lbl" style="color:var(--gold)">${trad('Partie classée')}</span><b>${trad('{d} points · {n} pts',{d:(r.delta>=0?'+':'−')+Math.abs(r.delta),n:r.after})}</b><span>${up?trad('Promotion : {rang}',{rang:`<b style="font-size:inherit;color:${b.c}">${rkFull(b)}</b>`}):down?trad('Rétrogradation : {rang}',{rang:rkFull(b)}):rkFull(b)}${b.next?' · '+trad('{n} pts avant le rang suivant',{n:b.next-r.after}):''}</span></div></div>`;}
+function rkFull(r){return trad(r.n)+(r.d>=0?' '+DIVS[r.d]:'');}
 function rkRender(){
   const box=$('lbList');if(!box)return;
-  if(!RK.db){box.innerHTML='<p class="mini">Classement indisponible : serveur injoignable.</p>';}
+  if(!RK.db){box.innerHTML=`<p class="mini">${trad('Classement indisponible : serveur injoignable.')}</p>`;}
   else{const rows=RK.lb.slice(0,lbAll?50:10);
-    let h=rows.length?'':'<p class="mini">Aucune partie classée pour l\'instant. Soyez le premier !</p>';
-    rows.forEach((d,i)=>{h+=`<div class="lbrow${d.id===RK.me?' me':''}"><span class="pos">${i+1}</span>${rkEmblem(d.rp,22)}<span class="nm">${esc(rkName(d))}${d.id===RK.me?' <i>(vous)</i>':''}</span><span class="rk" style="color:${rankOf(d.rp).c}">${rankOf(d.rp).full}</span><span class="pts">${d.rp}</span><span class="wl">${d.w}V ${d.l}D</span></div>`;});
+    let h=rows.length?'':`<p class="mini">${trad("Aucune partie classée pour l'instant. Soyez le premier !")}</p>`;
+    const vd=d=>trad('{v}V {d}D',{v:d.w,d:d.l});
+    rows.forEach((d,i)=>{h+=`<div class="lbrow${d.id===RK.me?' me':''}"><span class="pos">${i+1}</span>${rkEmblem(d.rp,22)}<span class="nm">${esc(rkName(d))}${d.id===RK.me?` <i>${trad('(vous)')}</i>`:''}</span><span class="rk" style="color:${rankOf(d.rp).c}">${rkFull(rankOf(d.rp))}</span><span class="pts">${d.rp}</span><span class="wl">${vd(d)}</span></div>`;});
     if(RK.me&&RK.doc&&!rows.some(d=>d.id===RK.me)){const pos=RK.lb.findIndex(d=>d.id===RK.me);const d=RK.doc;
-      h+=`<div class="lbrow me"><span class="pos">${pos>=0?pos+1:'—'}</span>${rkEmblem(d.rp,22)}<span class="nm">${esc(rkName(d))} <i>(vous)</i></span><span class="rk" style="color:${rankOf(d.rp).c}">${rankOf(d.rp).full}</span><span class="pts">${d.rp}</span><span class="wl">${d.w}V ${d.l}D</span></div>`;}
+      h+=`<div class="lbrow me"><span class="pos">${pos>=0?pos+1:'—'}</span>${rkEmblem(d.rp,22)}<span class="nm">${esc(rkName(d))} <i>${trad('(vous)')}</i></span><span class="rk" style="color:${rankOf(d.rp).c}">${rkFull(rankOf(d.rp))}</span><span class="pts">${d.rp}</span><span class="wl">${vd(d)}</span></div>`;}
     box.innerHTML=h;}
-  $('lbMore').hidden=!RK.db||RK.lb.length<=10;$('lbMore').textContent=lbAll?'Top 10':'Voir le top 50';
-  $('lbLive').textContent=RK.lobby?`${RK.on} sur la page · ${RK.searching} en recherche`:'';
+  $('lbMore').hidden=!RK.db||RK.lb.length<=10;$('lbMore').textContent=trad(lbAll?'Top 10':'Voir le top 50');
+  $('lbLive').textContent=RK.lobby?trad('{a} sur la page · {b} en recherche',{a:RK.on,b:RK.searching}):'';
   // carte du joueur
   const me=rkMe(),r=rankOf(me.rp),pct=r.next?Math.max(0,Math.min(100,100*(me.rp-r.floor)/(r.next-r.floor))):100;
-  $('rkCard').innerHTML=`${rkEmblem(me.rp,56)}<div class="rkinfo"><span class="lbl">Votre rang</span><b style="color:${r.c}">${r.full}</b><span>${me.rp} points${RK.doc?` · ${me.w} victoire${me.w>1?'s':''}, ${me.l} défaite${me.l>1?'s':''}${me.dr?`, ${me.dr} nul${me.dr>1?'s':''}`:''}`:' · non classé'}</span>
-    <div class="meter"><i style="width:${pct}%;background:${r.c}"></i></div><span class="mini">${r.next?`${r.next-me.rp} pts avant ${rankOf(r.next).full}`:'Rang maximal'}</span></div>`;
+  $('rkCard').innerHTML=`${rkEmblem(me.rp,56)}<div class="rkinfo"><span class="lbl">${trad('Votre rang')}</span><b style="color:${r.c}">${rkFull(r)}</b><span>${trad('{n} points',{n:me.rp})}${RK.doc?` · ${trad(me.w>1?'{n} victoires':'{n} victoire',{n:me.w})}, ${trad(me.l>1?'{n} défaites':'{n} défaite',{n:me.l})}${me.dr?', '+trad(me.dr>1?'{n} nuls':'{n} nul',{n:me.dr}):''}`:' · '+trad('non classé')}</span>
+    <div class="meter"><i style="width:${pct}%;background:${r.c}"></i></div><span class="mini">${r.next?trad('{n} pts avant {rang}',{n:r.next-me.rp,rang:rkFull(rankOf(r.next))}):trad('Rang maximal')}</span></div>`;
   const cs=$('rkCs');if(document.activeElement!==cs)cs.value=me.cs||'';cs.disabled=!RK.db||!RK.me;
-  const q=$('rkGo');q.textContent=RK.q?'Annuler la recherche':'Rechercher un adversaire';q.disabled=!!NET.role&&!RK.q;
-  $('rkSt').hidden=!RK.st&&!RK.q;$('rkSt').textContent=RK.q?`Recherche d'un adversaire… ${fmt((Date.now()-RK.qt)/1000)}`:RK.st;
-  if(RK.err)$('rkSt').hidden=false,$('rkSt').textContent+=RK.err?' · Enregistrement refusé par le serveur, réessayez plus tard.':'';
+  const q=$('rkGo');q.textContent=trad(RK.q?'Annuler la recherche':'Rechercher un adversaire');q.disabled=!!NET.role&&!RK.q;
+  $('rkSt').hidden=!RK.st&&!RK.q;$('rkSt').textContent=RK.q?`${trad("Recherche d'un adversaire…")} ${fmt((Date.now()-RK.qt)/1000)}`:trad(RK.st);
+  if(RK.err)$('rkSt').hidden=false,$('rkSt').textContent+=RK.err?' · '+trad('Enregistrement refusé par le serveur, réessayez plus tard.'):'';
 }
 let lbAll=false;
 $('lbMore').onclick=()=>{lbAll=!lbAll;rkRender();};
 $('rkGo').onclick=()=>{if(RK.q)rkCancel();else rkQueue();};
 function rkSaveCs(){const v=$('rkCs').value.replace(/[\u0000-\u001f\u007f-\u009f​-‏‪-‮⁦-⁩]/g,'').trim().slice(0,20),d=rkMe();if(!RK.db||!RK.me||v===(d.cs||''))return;rkWrite({...d,cs:v});}
 $('rkCs').addEventListener('change',rkSaveCs);
-$('rkLadder').innerHTML=RANKS.map(r=>`<span>${rkEmblem(r.min+(r.min&&r.min<1800?120:0),18)}${r.n}</span>`).join('');$('rkCs').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();$('rkCs').blur();rkSaveCs();}});
+$('rkLadder').innerHTML=RANKS.map(r=>`<span>${rkEmblem(r.min+(r.min&&r.min<1800?120:0),18)}${trad(r.n)}</span>`).join('');$('rkCs').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();$('rkCs').blur();rkSaveCs();}});
 
 
 /* ================= Mobile et tactile ================= */
@@ -2561,7 +2583,7 @@ const TABN={base:'Base',cap:'Capacités',ars:'Arsenal',zones:'Arrondissements',l
   for(const id of['tut','simCard','advCard','decCard','offerCard','selCard'])$(id).classList.add('tb');
   document.querySelector('#lp .card.hq').classList.add('tb');$('feed').closest('section').classList.add('tl');
   $('arrList').closest('section').classList.add('tz');$('abList').closest('section').classList.add('tc');$('tracks').closest('section').classList.add('ta');
-  for(const el of[$('lp'),$('rp'),$('moreSheet')]){const h=document.createElement('div');h.className='sheet-h';h.innerHTML='<b></b><button class="btn sm">Fermer</button>';h.querySelector('button').onclick=()=>setSheet('',true);el.prepend(h);}
+  for(const el of[$('lp'),$('rp'),$('moreSheet')]){const h=document.createElement('div');h.className='sheet-h';h.innerHTML=`<b></b><button class="btn sm">${trad('Fermer')}</button>`;h.querySelector('button').onclick=()=>setSheet('',true);el.prepend(h);}
 })();
 function applyCompact(){
   const c=innerWidth<=860||(innerHeight<=540&&matchMedia('(pointer:coarse)').matches),land=c&&innerWidth>innerHeight;
@@ -2571,9 +2593,9 @@ function applyCompact(){
 }
 function setSheet(t,force){sheet=force?t:(sheet===t?'':t);$('app').dataset.sheet=sheet;
   document.querySelectorAll('#tabs button').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.tab===sheet)));
-  document.querySelectorAll('.sheet-h b').forEach(b=>b.textContent=TABN[sheet]||'');if(sheet)$('tip').hidden=true;}
+  document.querySelectorAll('.sheet-h b').forEach(b=>b.textContent=TABN[sheet]?trad(TABN[sheet]):'');if(sheet)$('tip').hidden=true;}
 document.querySelectorAll('#tabs button').forEach(b=>b.onclick=()=>{setSheet(b.dataset.tab);hud();});
-$('multiBtn').onclick=()=>{multiSel=!multiSel;$('multiBtn').setAttribute('aria-pressed',String(multiSel));toast(multiSel?'Sélection multiple : touchez vos points pour les ajouter':'Sélection simple');};
+$('multiBtn').onclick=()=>{multiSel=!multiSel;$('multiBtn').setAttribute('aria-pressed',String(multiSel));toast(trad(multiSel?'Sélection multiple : touchez vos points pour les ajouter':'Sélection simple'));};
 function mobileCam(){if(!compact||spectate)return;if(innerWidth<innerHeight){const q=qgOf(player);if(!q)return;cam.z=Math.max(fitZ*1.4,(VH-view.t-view.b)/(H+40)*0.82);cam.x=q.x*0.4+W/2*0.6;cam.y=H/2;clampCam();}}
 function updateMobile(){
   if(!compact)return;
@@ -2585,15 +2607,15 @@ function updatePill(){
   const p=$('selPill');
   if(!compact||state!=='play'||spectate||isLocked()||sheet){p.hidden=true;return;}
   let h='',cls='pill';
-  if(abMode!==-1){const lab=abMode===-2?'Route permanente : touchez la destination':abMode===-3?`Dynamiter : touchez un pont (${P[player].charges} charge${P[player].charges>1?'s':''})`:`${ABL[player][abMode].name} : touchez une cible`;
-    h=`<div class="t"><b>${lab}</b></div><button class="btn sm" data-a="x">Annuler</button>`;cls+=' aim';}
+  if(abMode!==-1){const lab=abMode===-2?trad('Route permanente : touchez la destination'):abMode===-3?trad(P[player].charges>1?'Dynamiter : touchez un pont ({n} charges)':'Dynamiter : touchez un pont ({n} charge)',{n:P[player].charges}):trad('{nom} : touchez une cible',{nom:trad(ABL[player][abMode].name)});
+    h=`<div class="t"><b>${lab}</b></div><button class="btn sm" data-a="x">${trad('Annuler')}</button>`;cls+=' aim';}
   else if(aim>=0&&sel.size){const t=nodes[aim];if(!t||!t.alive){aim=-1;p.hidden=true;return;}
     let tot=0;for(const i of sel)if(i!==t.i)tot+=Math.floor(nodes[i].troops*ratio);
-    let st='';if(t.owner!==player){const need=Math.ceil(t.troops*defMult(t)*(t.owner==='N'?modOf(player,'neutralDef'):1)/atkMult(player)+0.01);st=tot>need?`<span class="ok">prise probable</span> · ${need} requis`:`<span class="ko">insuffisant</span> · ${need} requis`;}else st='renfort';
-    h=`<div class="t"><b>${time<BAL.prep?'Planifier':'Envoyer'} ${tot} → ${esc(t.name)}</b><span>${st} · ${Math.round(ratio*100)} % des troupes</span></div><button class="btn sm gold" data-a="go">${time<BAL.prep?'Planifier':'Envoyer'}</button><button class="btn sm" data-a="x">✕</button>`;cls+=' aim';}
+    let st='';if(t.owner!==player){const need=Math.ceil(t.troops*defMult(t)*(t.owner==='N'?modOf(player,'neutralDef'):1)/atkMult(player)+0.01);st=(tot>need?`<span class="ok">${trad('prise probable')}</span>`:`<span class="ko">${trad('insuffisant')}</span>`)+' · '+trad('{n} requis',{n:need});}else st=trad('renfort');
+    h=`<div class="t"><b>${trad(time<BAL.prep?'Planifier {n}':'Envoyer {n}',{n:tot})} → ${esc(t.name)}</b><span>${st} · ${trad('{n} % des troupes',{n:Math.round(ratio*100)})}</span></div><button class="btn sm gold" data-a="go">${trad(time<BAL.prep?'Planifier':'Envoyer')}</button><button class="btn sm" data-a="x">✕</button>`;cls+=' aim';}
   else if(sel.size){const list=[...sel].map(i=>nodes[i]).filter(myCmd);if(!list.length){p.hidden=true;return;}const n=list.length===1?list[0]:null,tr=Math.floor(list.reduce((a,m)=>a+m.troops,0));
-    h=`<div class="t"><b>${n?esc(n.name):list.length+' points'} · ${tr} soldats</b><span>Touchez une cible pour viser, ou appui long sur un de vos points</span></div>${n?'<button class="btn sm gold" data-a="b">Bâtir</button>':''}<button class="btn sm" data-a="c">✕</button>`;}
-  else if(selDead>=0){h=`<div class="t"><b>${esc(nodes[selDead].name)} · détruit</b><span>Reconstruction dans l'onglet Base</span></div><button class="btn sm gold" data-a="b">Voir</button>`;}
+    h=`<div class="t"><b>${n?esc(n.name):trad('{n} points',{n:list.length})} · ${trad('{n} soldats',{n:tr})}</b><span>${trad('Touchez une cible pour viser, ou appui long sur un de vos points')}</span></div>${n?`<button class="btn sm gold" data-a="b">${trad('Bâtir')}</button>`:''}<button class="btn sm" data-a="c">✕</button>`;}
+  else if(selDead>=0){h=`<div class="t"><b>${esc(nodes[selDead].name)} · ${trad('détruit')}</b><span>${trad("Reconstruction dans l'onglet Base")}</span></div><button class="btn sm gold" data-a="b">${trad('Voir')}</button>`;}
   else{p.hidden=true;return;}
   if(p.dataset.h!==h){p.dataset.h=h;p.innerHTML=h;p.querySelectorAll('button').forEach(b=>b.onclick=()=>{const a=b.dataset.a;
     if(a==='go'){const t=nodes[aim];aim=-1;if(t)sendSelection(t);}else if(a==='x'){if(abMode!==-1)setAbMode(abMode);aim=-1;}else if(a==='b')setSheet('base',true);else if(a==='c'){sel.clear();aim=-1;hover=null;}

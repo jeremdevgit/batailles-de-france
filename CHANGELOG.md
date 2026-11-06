@@ -1,5 +1,19 @@
 # Historique des versions
 
+## 1.1.0 — 2026-11-06
+
+**English**
+
+- **8 languages**: English, French, Spanish, German, Italian, Portuguese, Chinese and Japanese, picked automatically from the browser, with a menu on the home screen.
+- Online games: shared messages (log, banners, end of game) are sent as templates and shown to each player in their own language.
+- Numbers formatted for the chosen language; translations loaded one language at a time (about 90 KB) on the server version, all included in the offline file.
+
+**Français**
+
+- **8 langues** : français, anglais, espagnol, allemand, italien, portugais, chinois et japonais, choisies selon le navigateur, avec un menu sur l'écran d'accueil.
+- Parties en ligne : les messages partagés (journal, bannières, fin de partie) voyagent sous forme de modèles et s'affichent dans la langue de chaque joueur.
+- Nombres affichés selon la langue choisie ; une seule langue chargée à la fois (environ 90 Ko) sur la version serveur, toutes incluses dans le fichier hors ligne.
+
 ## 2026-11-05 — Publication open source
 
 - Écran d'accueil : « Créé par jeremdevgit » et liens vers les autres logiciels de l'auteur.

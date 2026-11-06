@@ -39,14 +39,20 @@ def main() -> None:
             raise SystemExit(f"Texte introuvable dans jeu.js : {avant[:60]}…")
         jeu = jeu.replace(avant, apres)
     jeu = jeu.replace("</script", "<\\/script")
-    empreinte = "'sha256-" + base64.b64encode(hashlib.sha256(jeu.encode("utf-8")).digest()).decode("ascii") + "'"
+    # Langues : traductions et choix de la langue, intégrés eux aussi et autorisés par leur empreinte
+    textes = "\n".join(f.read_text(encoding="utf-8") for f in sorted((STATIQUE / "textes").glob("*.js"))).replace("</script", "<\\/script")
+    langue = (STATIQUE / "langue.js").read_text(encoding="utf-8").replace("</script", "<\\/script")
+    hacher = lambda code: "'sha256-" + base64.b64encode(hashlib.sha256(code.encode("utf-8")).digest()).decode("ascii") + "'"
+    empreinte = " ".join(hacher(x) for x in (textes, langue, jeu))
 
     html = html.replace('href="/static/icone.svg"', f'href="{data_uri(STATIQUE / "icone.svg", "image/svg+xml")}"')
     html = re.sub(r"url\(/static/(polices/[a-z0-9-]+\.woff2)\)", lambda m: f"url({data_uri(STATIQUE / m.group(1), 'font/woff2')})", html)
     # Sans serveur, pas de client réseau : le jeu désactive alors lui-même le mode en ligne
     html, n1 = re.subn(r'<script src="/static/reseau\.js"></script>\s*', "", html)
     html, n2 = re.subn(r'<script src="/static/jeu\.js"></script>', lambda m: f"<script>{jeu}</script>", html)
-    if (n1, n2) != (1, 1):
+    html, n3 = re.subn(r'<script src="/static/textes-chargeur\.js"></script>', lambda m: f"<script>{textes}</script>", html)
+    html, n4 = re.subn(r'<script src="/static/langue\.js"></script>', lambda m: f"<script>{langue}</script>", html)
+    if (n1, n2, n3, n4) != (1, 1, 1, 1):
         raise SystemExit("Balises de script introuvables dans index.html")
 
     csp = ("default-src 'none'; script-src " + empreinte + "; style-src 'unsafe-inline'; img-src data: blob:; "

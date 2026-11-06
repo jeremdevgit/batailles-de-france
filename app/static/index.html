@@ -269,6 +269,7 @@ button:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
 /* lobby */
 .lobby{max-width:1060px;gap:14px}
 .lobby-head{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;flex-wrap:wrap}
+.langues{margin-left:auto}.langue{font-family:var(--body,inherit);font-size:14px;font-weight:600;color:var(--text);background:transparent;border:1px solid var(--line);border-radius:3px;padding:8px 10px;cursor:pointer}.langue option{color:#000}
 .lsec{display:flex;flex-direction:column;gap:10px}
 .lsec-h{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
 .maps{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:10px}
@@ -587,7 +588,8 @@ textarea.edin{width:100%;min-height:180px;font-family:ui-monospace,Consolas,mono
   <div id="startOv" class="overlay">
     <div class="panel lobby">
       <div class="lobby-head">
-        <div><span class="eyebrow">Stratégie urbaine · 5 villes de France</span><h1>Batailles de France</h1></div>
+        <div><span class="eyebrow">Stratégie urbaine · 5 villes de France</span><h1 data-brut>Batailles de France</h1></div>
+        <span class="langues" data-langues></span>
         <button class="go2" id="contBtn" hidden>Continuer</button>
       </div>
       <section class="lsec">
@@ -843,6 +845,8 @@ textarea.edin{width:100%;min-height:180px;font-family:ui-monospace,Consolas,mono
   </div>
 </div>
 
+<script src="/static/textes-chargeur.js"></script>
+<script src="/static/langue.js"></script>
 <script src="/static/reseau.js"></script>
 <script src="/static/jeu.js"></script>
 </body>

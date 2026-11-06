@@ -1,51 +1,55 @@
 # Batailles de France
 
-**Un jeu de stratégie en temps réel dans le navigateur, sur les vraies cartes de cinq villes françaises.** Prends le quartier général adverse à Lyon, Paris, Marseille, Bordeaux ou Strasbourg : ponts, rives, collines, arrondissements, bâtiments, recherches, capacités, décisions politiques et imprévus propres à chaque ville.
+**English** · [Français](README.fr.md) · [Español](README.es.md)
 
-![Une partie à Lyon](captures/partie-pc.png)
+**A real-time strategy game in the browser, played on the real maps of five French cities.** Take the enemy headquarters in Lyon, Paris, Marseille, Bordeaux or Strasbourg: bridges, riverbanks, hills, districts, buildings, research, abilities, political decisions and city-specific surprises.
 
-## Modes de jeu
+**8 languages**: English, French, Spanish, German, Italian, Portuguese, Chinese and Japanese. The browser language is picked automatically and a menu on the home screen lets you switch. Online, each player reads the game messages in their own language.
 
-- **Solo** contre l'IA, seul ou en 2 contre 2 avec une IA alliée ; ta carrière progresse à chaque partie.
-- **Deux joueurs** sur le même ordinateur, chacun donnant ses ordres à son tour.
-- **En ligne** avec tes amis, en 1 contre 1 ou 2 contre 2, grâce à un code de partie à 5 caractères.
-- **Classé** : recherche automatique d'un adversaire, rangs de Recrue à Maréchal, classement des joueurs.
-- **Simulation** : deux IA s'affrontent, tu observes.
-- **Éditeur de cartes** pour créer et partager tes propres champs de bataille.
+![A game in Lyon](captures/en/partie-pc.png)
 
-<p><img src="captures/accueil-pc.png" alt="Choix de la carte et du mode" width="62%"> <img src="captures/accueil-telephone.png" alt="Sur téléphone" width="18%"></p>
+## Game modes
 
-<p><img src="captures/partie-telephone.jpg" alt="Une partie sur téléphone, en paysage" width="80%"></p>
+- **Solo** against the AI, alone or 2 vs 2 with an allied AI; your career progresses with every game.
+- **Two players** on the same computer, each giving orders in turn.
+- **Online** with friends, 1 vs 1 or 2 vs 2, using a 5-character game code.
+- **Ranked**: automatic matchmaking, ranks from Recruit to Marshal, player leaderboard.
+- **Simulation**: two AIs fight, you watch.
+- **Map editor** to create and share your own battlefields.
 
----
+<p><img src="captures/en/accueil-pc.png" alt="Choosing the map and mode" width="62%"> <img src="captures/en/accueil-telephone.png" alt="On a phone" width="18%"></p>
 
-## Jouer tout de suite (hors ligne)
-
-Télécharge `Batailles-de-France-hors-ligne.html` dans la page [Releases](https://github.com/jeremdevgit/batailles-de-france/releases/latest) et ouvre-le dans ton navigateur. Tout fonctionne sans connexion : solo, deux joueurs, simulation et éditeur de cartes. Le jeu en ligne et le mode classé demandent le serveur de jeu (ci-dessous).
-
-Pour vérifier le fichier : `shasum -a 256 -c SHA256SUMS.txt --ignore-missing` (macOS / Linux) ou `Get-FileHash` (Windows).
+<p><img src="captures/en/partie-telephone.jpg" alt="A game on a phone, in landscape" width="80%"></p>
 
 ---
 
-## Héberger le jeu en ligne
+## Play right away (offline)
 
-Le serveur (`app/main.py`, FastAPI) sert le jeu, relaie les messages des parties en ligne par WebSocket et tient le classement (SQLite). Il ne calcule rien : l'ordinateur de l'hôte simule la partie, les invités reçoivent l'état.
+Download `Batailles-de-France-hors-ligne.html` from the [Releases](https://github.com/jeremdevgit/batailles-de-france/releases/latest) page and open it in your browser. Everything works without a connection: solo, two players, simulation and map editor. Online play and ranked mode need the game server (below).
 
-### Avec Docker (recommandé)
+To check the file: `shasum -a 256 -c SHA256SUMS.txt --ignore-missing` (macOS / Linux) or `Get-FileHash` (Windows).
+
+---
+
+## Hosting the game online
+
+The server (`app/main.py`, FastAPI) serves the game, relays online game messages over WebSocket and keeps the leaderboard (SQLite). It doesn't compute anything: the host's computer simulates the game and guests receive the state.
+
+### With Docker (recommended)
 
 ```sh
 docker compose up -d --build
 ```
 
-Le serveur écoute alors sur `127.0.0.1:8000`. Place devant un **proxy HTTPS** qui transmet les WebSockets. Exemple avec Caddy :
+The server then listens on `127.0.0.1:8000`. Put an **HTTPS proxy** that forwards WebSockets in front of it. Example with Caddy:
 
 ```caddy
-jeu.exemple.fr {
+game.example.com {
 	reverse_proxy 127.0.0.1:8000
 }
 ```
 
-Exemple avec nginx :
+Example with nginx:
 
 ```nginx
 location / {
@@ -58,15 +62,15 @@ location / {
 }
 ```
 
-### Réglages (variables d'environnement)
+### Settings (environment variables)
 
-| Variable | Rôle | Défaut |
+| Variable | Purpose | Default |
 |---|---|---|
-| `FORWARDED_ALLOW_IPS` | Adresse ou réseau du proxy autorisé à transmettre l'IP réelle des joueurs. **Ne jamais mettre `*`** si le port du serveur est joignable directement : un joueur pourrait usurper une adresse et contourner les limites. | `172.16.0.0/12` dans `docker-compose.yml` (proxy sur la machine, via la passerelle Docker) |
-| `BDF_DONNEES` | Dossier de la base du classement | `/donnees` |
-| `BDF_STATIQUE` | Dossier des fichiers du jeu | `/app/static` |
+| `FORWARDED_ALLOW_IPS` | Address or network of the proxy allowed to pass on players' real IP. **Never set it to `*`** if the server port can be reached directly: a player could spoof an address and get around the limits. | `172.16.0.0/12` in `docker-compose.yml` (proxy on the same machine, through the Docker gateway) |
+| `BDF_DONNEES` | Leaderboard database folder | `/donnees` |
+| `BDF_STATIQUE` | Game files folder | `/app/static` |
 
-### Sans Docker
+### Without Docker
 
 ```sh
 python3 -m venv .venv && . .venv/bin/activate
@@ -75,65 +79,64 @@ cd app && BDF_STATIQUE="$PWD/static" BDF_DONNEES="$PWD/../donnees" \
   uvicorn main:app --host 127.0.0.1 --port 8000 --proxy-headers --no-server-header
 ```
 
-(Crée d'abord le dossier `donnees/`.)
+(Create the `donnees/` folder first.)
 
 ---
 
-## Sécurité
+## Security
 
-- **Aucun compte, aucune donnée personnelle** : chaque navigateur reçoit un jeton aléatoire ; seul un identifiant dérivé (empreinte) apparaît au classement.
-- **Limites côté serveur** : taille des messages, débit par joueur, connexions par adresse, nombre de parties et de joueurs par partie, écritures au classement par minute, requêtes trop volumineuses refusées.
-- **Requêtes SQL paramétrées**, entrées validées par des expressions strictes, documentation de l'API désactivée.
-- **En-têtes de sécurité** envoyés par le serveur lui-même : CSP stricte (`script-src 'self'`), interdiction d'affichage dans une iframe, `nosniff`, aucun referrer.
-- **Texte venant des autres joueurs neutralisé** (carte de l'hôte, pseudo, carte importée) : impossible d'injecter du HTML dans la page d'un autre joueur.
-- **Image Docker durcie** : utilisateur sans privilèges, système de fichiers en lecture seule, aucune capacité Linux, `no-new-privileges`, mémoire limitée.
-- **Polices embarquées** : aucune requête vers un service tiers.
+- **No account, no personal data**: each browser gets a random token; only a derived identifier (hash) appears on the leaderboard.
+- **Server-side limits**: message size, rate per player, connections per address, number of games and players per game, leaderboard writes per minute, oversized requests refused.
+- **Parameterized SQL queries**, inputs validated with strict patterns, API documentation disabled.
+- **Security headers** sent by the server itself: strict CSP (`script-src 'self'`), no framing, `nosniff`, no referrer.
+- **Text from other players neutralized** (host's map, nickname, imported map): no HTML can be injected into another player's page. Shared game messages travel as templates that each player's browser translates locally.
+- **Hardened Docker image**: unprivileged user, read-only file system, no Linux capabilities, `no-new-privileges`, limited memory.
+- **Bundled fonts**: no requests to third-party services.
 
-**Limites connues** (inhérentes à la conception, pas des failles) : le classement repose sur les résultats déclarés par les navigateurs (le serveur vérifie leur vraisemblance : une seule partie à la fois, au plus 100 points d'écart) ; en partie en ligne, l'ordinateur de l'hôte fait autorité.
+**Known limitations** (by design, not vulnerabilities): the leaderboard relies on results reported by browsers (the server checks they are plausible: one game at a time, at most 100 points difference); in an online game, the host's computer is authoritative.
 
-Une faille ? Merci de lire [SECURITY.md](SECURITY.md) avant d'ouvrir un ticket public.
+Found a vulnerability? Please read [SECURITY.md](SECURITY.md) before opening a public issue.
 
 ---
 
-## Construire la version hors ligne
+## Building the offline version
 
 ```sh
 python3 construire.py
 ```
 
-Crée `dist/Batailles-de-France-hors-ligne.html` (jeu, polices et icône dans un seul fichier, script autorisé par son empreinte SHA-256) et `dist/SHA256SUMS.txt`. Python 3.8 ou plus récent suffit, sans dépendance.
+Creates `dist/Batailles-de-France-hors-ligne.html` (game, translations, fonts and icon in a single file, scripts allowed by their SHA-256 hash) and `dist/SHA256SUMS.txt`. Python 3.8 or later is enough, with no dependencies.
 
-## Structure du dépôt
+## Translations
+
+`app/static/langue.js` picks the language (`?lang=` link, saved choice, then browser language) and translates the page once when it loads; `textes-chargeur.js` loads only the file for that language from `app/static/textes/`. The French text is the key: to fix a translation, edit the language's file.
+
+## Repository layout
 
 ```
-app/main.py              serveur de jeu (FastAPI) : pages, relais WebSocket, classement
-app/static/              le jeu : index.html, jeu.js, reseau.js (client réseau), icône, polices
+app/main.py              game server (FastAPI): pages, WebSocket relay, leaderboard
+app/static/              the game: index.html, jeu.js, reseau.js (network client), icon, fonts
+app/static/textes/       translations, one file per language
 Dockerfile, docker-compose.yml, requirements.txt
-construire.py            construction de la version hors ligne (dist/)
-captures/                captures d'écran
-licences-tiers/          licences des polices
+construire.py            builds the offline version (dist/)
+captures/                screenshots (captures/en: English interface)
+licences-tiers/          font licenses
 ```
 
-## Licence
+## License
 
-Code sous licence **GNU GPL v3 ou ultérieure** — voir [LICENSE](LICENSE). Copyright © 2026 jeremdevgit.
+Code under the **GNU GPL v3 or later** — see [LICENSE](LICENSE). Copyright © 2026 jeremdevgit.
 
-Polices incluses, sous licence SIL Open Font License 1.1 (dossier [licences-tiers](licences-tiers/)) : [Barlow](https://github.com/jpt/barlow) et [Saira Condensed](https://github.com/Omnibus-Type/Saira).
+Bundled fonts, under the SIL Open Font License 1.1 (folder [licences-tiers](licences-tiers/)): [Barlow](https://github.com/jpt/barlow) and [Saira Condensed](https://github.com/Omnibus-Type/Saira).
 
-## Mes autres logiciels
+## My other software
 
-Tous libres, gratuits et sans publicité — [github.com/jeremdevgit](https://github.com/jeremdevgit) :
+All free, open source and ad-free — [github.com/jeremdevgit](https://github.com/jeremdevgit):
 
-| Logiciel | Pour | En bref |
+| Software | For | In short |
 |---|---|---|
-| [Boîte à outils](https://github.com/jeremdevgit/boite-a-outils) | Windows, macOS | entretien, nettoyage et réglages cachés |
-| [Pomme](https://github.com/jeremdevgit/pomme) | Windows | lecteur Apple Music et musique locale |
-| [rJb](https://github.com/jeremdevgit/rjb) | Windows | l'éclairage RGB de tous tes appareils dans une seule application |
-| [Ludothèque](https://github.com/jeremdevgit/ludotheque) | macOS | tous tes jeux dans un seul lanceur |
-| [Suite Libre](https://jeremdevgit.github.io/suite-libre/) | navigateur | six outils sans compte : QR codes, flou, photos, conversions, moyennes, mots de passe |
-
----
-
-## English summary
-
-**Batailles de France** is a real-time strategy game that runs in the browser, played on the real maps of five French cities (Lyon, Paris, Marseille, Bordeaux, Strasbourg). Modes: solo vs AI (1v1 or 2v2 with an AI ally), hot-seat two players, online 1v1/2v2 with a 5-character room code, ranked matchmaking with a leaderboard, AI-vs-AI simulation and a map editor. The interface is in French. Play offline with the single HTML file from Releases, or self-host the small FastAPI server (Docker Compose provided) behind any HTTPS reverse proxy that forwards WebSockets. Hardened server (rate/size limits, strict CSP, sanitized player-provided text, non-root read-only container). Licensed under GPL-3.0-or-later.
+| [Boîte à outils](https://github.com/jeremdevgit/boite-a-outils) | Windows, macOS | maintenance, cleanup and hidden settings |
+| [Pomme](https://github.com/jeremdevgit/pomme) | Windows | Apple Music and local music player |
+| [rJb](https://github.com/jeremdevgit/rjb) | Windows | RGB lighting for all your devices in one app |
+| [Ludothèque](https://github.com/jeremdevgit/ludotheque) | macOS | all your games in one launcher |
+| [Suite Libre](https://jeremdevgit.github.io/suite-libre/) | browser | six tools with no account: QR codes, blur, photos, conversions, averages, passwords |
