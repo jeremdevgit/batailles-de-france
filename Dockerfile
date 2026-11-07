@@ -8,7 +8,7 @@ RUN apt-get update && apt-get upgrade -y --no-install-recommends && rm -rf /var/
  && pip install --no-cache-dir -r requirements.txt \
  && useradd --uid 10000 --no-create-home --shell /usr/sbin/nologin jeu \
  && mkdir -p /donnees && chown 10000 /donnees \
- && python -m pip uninstall -y pip setuptools wheel >/dev/null 2>&1 || true
+ && (python -m pip uninstall -y pip setuptools wheel >/dev/null 2>&1 || true)
 COPY app/ /app/
 USER 10000
 EXPOSE 8000

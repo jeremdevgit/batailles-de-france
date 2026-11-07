@@ -1,5 +1,12 @@
 # Historique des versions
 
+## 1.1.1 — 2026-11-07 — Sécurité / Security
+
+- Le build Docker échoue désormais si les mises à jour système, les dépendances Python ou la préparation des droits échouent. Seule la désinstallation optionnelle des outils de packaging tolère un échec.
+- Docker builds now fail when system updates, Python dependencies or permission setup fail. Only optional packaging-tool removal tolerates errors.
+- Le jeu hors ligne ne change pas. / The offline game is unchanged.
+
+
 ## 1.1.0 — 2026-11-06
 
 **English**
