@@ -13,6 +13,7 @@ import base64
 import hashlib
 import pathlib
 import re
+from verifier_ressources import ressources_non_integrees
 
 RACINE = pathlib.Path(__file__).resolve().parent
 STATIQUE = RACINE / "app" / "static"
@@ -59,8 +60,7 @@ def main() -> None:
            "font-src data:; connect-src 'none'; base-uri 'none'; form-action 'none'; object-src 'none'")
     html = html.replace('<meta charset="utf-8">', f'<meta charset="utf-8">\n<meta http-equiv="Content-Security-Policy" content="{csp}">', 1)
 
-    sans_script = re.sub(r"<script>.*?</script>", "", html, flags=re.S)
-    restes = re.findall(r'(?:src|href)="(?!data:|#|https?://)([^"]+)"|url\((?!data:)([^)]+)\)', sans_script)
+    restes = ressources_non_integrees(html, liens_externes=True)
     if restes:
         raise SystemExit(f"Ressources non intégrées : {restes}")
 
