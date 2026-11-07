@@ -10,5 +10,14 @@
     var n = navigator.languages && navigator.languages.length ? navigator.languages : [navigator.language || ""];
     for (var i = 0; i < n.length; i++) { var x = String(n[i]).slice(0, 2).toLowerCase(); if (L.indexOf(x) >= 0) { c = x; break; } }
   }
-  if (c !== "fr") document.write('<script src="/static/textes/' + c + '.js"><\/script>');
+  // Static allowlist: parser ordering is required by langue.js; no DOM text becomes HTML.
+  switch (c) {
+    case "en": document.write('<script src="/static/textes/en.js"><\/script>'); break;
+    case "es": document.write('<script src="/static/textes/es.js"><\/script>'); break;
+    case "de": document.write('<script src="/static/textes/de.js"><\/script>'); break;
+    case "it": document.write('<script src="/static/textes/it.js"><\/script>'); break;
+    case "pt": document.write('<script src="/static/textes/pt.js"><\/script>'); break;
+    case "zh": document.write('<script src="/static/textes/zh.js"><\/script>'); break;
+    case "ja": document.write('<script src="/static/textes/ja.js"><\/script>'); break;
+  }
 })();

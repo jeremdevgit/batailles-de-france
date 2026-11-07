@@ -59,7 +59,7 @@ def main() -> None:
            "font-src data:; connect-src 'none'; base-uri 'none'; form-action 'none'; object-src 'none'")
     html = html.replace('<meta charset="utf-8">', f'<meta charset="utf-8">\n<meta http-equiv="Content-Security-Policy" content="{csp}">', 1)
 
-    sans_script = re.sub(r"<script>.*?</script>", "", html, flags=re.S)
+    sans_script = re.sub(r"<script\b[^>]*>.*?</script\s*>", "", html, flags=re.S | re.I)
     restes = re.findall(r'(?:src|href)="(?!data:|#|https?://)([^"]+)"|url\((?!data:)([^)]+)\)', sans_script)
     if restes:
         raise SystemExit(f"Ressources non intégrées : {restes}")

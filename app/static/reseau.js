@@ -27,7 +27,7 @@
   /* ---------- connexion à un salon ---------- */
   function connecter(nomSalon) {
     return new Promise(function (ok, ko) {
-      var ws, moi = null, pairs = {}, ecoutes = {}, ecoutesPairs = [], fini = false, pret = false;
+      var ws, moi = null, pairs = Object.create(null), ecoutes = Object.create(null), ecoutesPairs = [], fini = false, pret = false;
       try { ws = new WebSocket(urlWs(nomSalon)); } catch (e) { ko({ code: "connexion" }); return; }
       function pair(p) { return { peer: p.p, by: p.by, sameTab: false, kind: "viewer", presence: p.pr || null }; }
       function liste() {
@@ -47,7 +47,7 @@
         },
         presence: function (obj) {
           if (fini || ws.readyState !== 1) return Promise.reject({ code: "ferme" });
-          var pr = {};
+          var pr = Object.create(null);
           for (var k in obj) if (obj[k] !== null && obj[k] !== undefined) pr[k] = obj[k];
           moi.pr = pr;
           try { ws.send(JSON.stringify({ t: "presence", d: pr })); } catch (e) { return Promise.reject({ code: "envoi" }); }
@@ -63,7 +63,7 @@
       ws.onmessage = function (ev) {
         var m; try { m = JSON.parse(ev.data); } catch (e) { return; }
         if (m.t === "bienvenue") {
-          moi = { p: m.moi, by: m.by, pr: null }; pairs = {};
+          moi = { p: m.moi, by: m.by, pr: null }; pairs = Object.create(null);
           (m.pairs || []).forEach(function (p) { pairs[p.p] = p; });
           pret = true; ok(salon);
           // signe de vie : le serveur coupe un salon de partie resté muet 2 min
@@ -84,7 +84,7 @@
         if (!fini) {
           fini = true;
           var l = []; for (var k in pairs) l.push(pair(pairs[k]));
-          pairs = {}; prevenir([], l);
+          pairs = Object.create(null); prevenir([], l);
           if (salon._perdu) salon._perdu();
         }
       };
@@ -107,7 +107,7 @@
   var room = {
     join: function (nom) { return connecter(String(nom)); },
     presence: function (obj) {
-      var pr = {}; for (var k in obj) if (obj[k] !== null && obj[k] !== undefined) pr[k] = obj[k];
+      var pr = Object.create(null); for (var k in obj) if (obj[k] !== null && obj[k] !== undefined) pr[k] = obj[k];
       accueil.presence = pr;
       if (accueil.salon) return accueil.salon.presence(pr);
       accueilConnecter(); return Promise.resolve();

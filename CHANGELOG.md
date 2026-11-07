@@ -2,6 +2,8 @@
 
 ## 1.1.1 — 2026-11-07 — Sécurité / Security
 
+- Chargeur de traductions à chemins constants ; dictionnaires réseau sans prototype ; contrôle des balises script insensible à la casse.
+- Use constant translation paths and prototype-free network dictionaries; handle script tag case in offline resource checks.
 - Le build Docker échoue désormais si les mises à jour système, les dépendances Python ou la préparation des droits échouent. Seule la désinstallation optionnelle des outils de packaging tolère un échec.
 - Docker builds now fail when system updates, Python dependencies or permission setup fail. Only optional packaging-tool removal tolerates errors.
 - Le jeu hors ligne ne change pas. / The offline game is unchanged.
