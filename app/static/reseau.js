@@ -27,12 +27,12 @@
   /* ---------- connexion à un salon ---------- */
   function connecter(nomSalon) {
     return new Promise(function (ok, ko) {
-      var ws, moi = null, pairs = Object.create(null), ecoutes = Object.create(null), ecoutesPairs = [], fini = false, pret = false;
+      var ws, moi = null, pairs = new Map(), ecoutes = new Map(), ecoutesPairs = [], fini = false, pret = false;
       try { ws = new WebSocket(urlWs(nomSalon)); } catch (e) { ko({ code: "connexion" }); return; }
       function pair(p) { return { peer: p.p, by: p.by, sameTab: false, kind: "viewer", presence: p.pr || null }; }
       function liste() {
         var l = [{ peer: moi.p, by: moi.by, sameTab: true, kind: "viewer", presence: moi.pr || null }];
-        for (var k in pairs) l.push(pair(pairs[k]));
+        pairs.forEach(function (p) { l.push(pair(p)); });
         return l;
       }
       function prevenir(joined, left) {
@@ -54,7 +54,7 @@
           prevenir([], []);
           return Promise.resolve();
         },
-        on: function (sujet, f) { (ecoutes[sujet] = ecoutes[sujet] || []).push(f); return function () { ecoutes[sujet] = (ecoutes[sujet] || []).filter(function (g) { return g !== f; }); }; },
+        on: function (sujet, f) { var handlers = ecoutes.get(sujet) || []; handlers.push(f); ecoutes.set(sujet, handlers); return function () { ecoutes.set(sujet, (ecoutes.get(sujet) || []).filter(function (g) { return g !== f; })); }; },
         onPeers: function (f) { ecoutesPairs.push(f); return function () { ecoutesPairs = ecoutesPairs.filter(function (g) { return g !== f; }); }; },
         peers: function () { return moi ? liste() : []; },
         leave: function () { fini = true; try { ws.close(1000); } catch (e) {} return Promise.resolve(); },
@@ -63,19 +63,19 @@
       ws.onmessage = function (ev) {
         var m; try { m = JSON.parse(ev.data); } catch (e) { return; }
         if (m.t === "bienvenue") {
-          moi = { p: m.moi, by: m.by, pr: null }; pairs = Object.create(null);
-          (m.pairs || []).forEach(function (p) { pairs[p.p] = p; });
+          moi = { p: m.moi, by: m.by, pr: null }; pairs = new Map();
+          (m.pairs || []).forEach(function (p) { pairs.set(p.p, p); });
           pret = true; ok(salon);
           // signe de vie : le serveur coupe un salon de partie resté muet 2 min
           var vie = setInterval(function () { if (fini || ws.readyState !== 1) { clearInterval(vie); return; } try { ws.send('{"t":"ping"}'); } catch (e) {} }, 30000);
         } else if (m.t === "pairs") {
           var j = [], l = [];
-          (m.partis || []).forEach(function (id) { if (pairs[id]) { l.push(pair(pairs[id])); delete pairs[id]; } });
-          (m.arrives || []).forEach(function (p) { if (!pairs[p.p]) { pairs[p.p] = p; j.push(pair(p)); } });
-          (m.maj || []).forEach(function (p) { if (pairs[p.p]) pairs[p.p].pr = p.pr; });
+          (m.partis || []).forEach(function (id) { if (pairs.has(id)) { l.push(pair(pairs.get(id))); pairs.delete(id); } });
+          (m.arrives || []).forEach(function (p) { if (!pairs.has(p.p)) { pairs.set(p.p, p); j.push(pair(p)); } });
+          (m.maj || []).forEach(function (p) { var known = pairs.get(p.p); if (known) known.pr = p.pr; });
           prevenir(j, l);
         } else if (m.t === "msg") {
-          (ecoutes[m.s] || []).forEach(function (f) { try { f({ peer: m.p, by: m.by, sameTab: false, data: m.d }); } catch (e) {} });
+          (ecoutes.get(m.s) || []).forEach(function (f) { try { f({ peer: m.p, by: m.by, sameTab: false, data: m.d }); } catch (e) {} });
         } else if (m.t === "erreur" && !pret) { fini = true; ko({ code: m.code || "refus" }); }
       };
       ws.onerror = function () { if (!pret) { fini = true; ko({ code: "serveur injoignable" }); } };
@@ -83,8 +83,8 @@
         if (!pret) { if (!fini) ko({ code: "serveur injoignable" }); fini = true; return; }
         if (!fini) {
           fini = true;
-          var l = []; for (var k in pairs) l.push(pair(pairs[k]));
-          pairs = Object.create(null); prevenir([], l);
+          var l = []; pairs.forEach(function (p) { l.push(pair(p)); });
+          pairs = new Map(); prevenir([], l);
           if (salon._perdu) salon._perdu();
         }
       };
