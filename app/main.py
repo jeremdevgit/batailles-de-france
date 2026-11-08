@@ -25,6 +25,7 @@ from collections import defaultdict
 from fastapi import FastAPI, Request, WebSocket, WebSocketDisconnect
 from fastapi.responses import FileResponse, JSONResponse, PlainTextResponse
 from fastapi.staticfiles import StaticFiles
+from limiteur_ecritures import LimiteurEcritures
 
 STATIQUE = os.environ.get("BDF_STATIQUE", "/app/static")
 BASE = os.path.join(os.environ.get("BDF_DONNEES", "/donnees"), "classement.db")
@@ -63,7 +64,7 @@ app.mount("/static", StaticFiles(directory=STATIQUE), name="static")
 salons: dict[str, dict[str, dict]] = {}
 par_ip: dict[str, int] = defaultdict(int)
 verrou = asyncio.Lock()
-ecritures: dict[str, list[float]] = defaultdict(list)
+ecritures = LimiteurEcritures(par_minute=ECRITURES_PAR_MIN)
 
 
 def ident(jeton: str) -> str | None:
@@ -167,13 +168,8 @@ async def ecrire(i: str, req: Request):
     if jeton_requete(req) != i or not RE_ID.match(i):
         return JSONResponse({"code": "permission_denied"}, 403)
     now = time.monotonic()
-    if len(ecritures) > 5000:   # purge des joueurs sans écriture récente (la liste ne grossit pas sans fin)
-        for k in [k for k, v in ecritures.items() if not v or now - v[-1] >= 60]:
-            del ecritures[k]
-    ecritures[i] = [t for t in ecritures[i] if now - t < 60]
-    if len(ecritures[i]) >= ECRITURES_PAR_MIN:
+    if not ecritures.autoriser(i, now):
         return JSONResponse({"code": "trop_rapide"}, 429)
-    ecritures[i].append(now)
     try:
         if int(req.headers.get("content-length") or 0) > CORPS_MAX:
             return JSONResponse({"code": "trop_grand"}, 413)
