@@ -86,7 +86,7 @@ cd app && BDF_STATIQUE="$PWD/static" BDF_DONNEES="$PWD/../donnees" \
 ## Security
 
 - **No account, no personal data**: each browser gets a random token; only a derived identifier (hash) appears on the leaderboard.
-- **Server-side limits**: message size, rate per player, connections per address, number of games and players per game, leaderboard writes per minute, oversized requests refused.
+- **Server-side limits**: message size, rate per player, connections per address, number of games and players per game, leaderboard writes per minute; at most 5,000 active writer identities are tracked, and new identities receive HTTP 429 while that bound is full.
 - **Parameterized SQL queries**, inputs validated with strict patterns, API documentation disabled.
 - **Security headers** sent by the server itself: strict CSP (`script-src 'self'`), no framing, `nosniff`, no referrer.
 - **Text from other players neutralized** (host's map, nickname, imported map): no HTML can be injected into another player's page. Shared game messages travel as templates that each player's browser translates locally.

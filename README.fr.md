@@ -86,7 +86,7 @@ cd app && BDF_STATIQUE="$PWD/static" BDF_DONNEES="$PWD/../donnees" \
 ## Sécurité
 
 - **Aucun compte, aucune donnée personnelle** : chaque navigateur reçoit un jeton aléatoire ; seul un identifiant dérivé (empreinte) apparaît au classement.
-- **Limites côté serveur** : taille des messages, débit par joueur, connexions par adresse, nombre de parties et de joueurs par partie, écritures au classement par minute, requêtes trop volumineuses refusées.
+- **Limites côté serveur** : taille des messages, débit par joueur, connexions par adresse, nombre de parties et de joueurs par partie, écritures au classement par minute ; au plus 5 000 identités actives sont suivies, et les nouvelles reçoivent une réponse HTTP 429 tant que cette limite est atteinte.
 - **Requêtes SQL paramétrées**, entrées validées par des expressions strictes, documentation de l'API désactivée.
 - **En-têtes de sécurité** envoyés par le serveur lui-même : CSP stricte (`script-src 'self'`), interdiction d'affichage dans une iframe, `nosniff`, aucun referrer.
 - **Texte venant des autres joueurs neutralisé** (carte de l'hôte, pseudo, carte importée) : impossible d'injecter du HTML dans la page d'un autre joueur.

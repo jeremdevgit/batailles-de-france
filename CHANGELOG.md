@@ -1,5 +1,10 @@
 # Historique des versions
 
+## 1.1.2 — 2026-11-08 — Sécurité / Security
+
+- Limite le nombre d'identités actives du classement à 5 000 et refuse temporairement les nouvelles au-delà, pour protéger le serveur contre l'épuisement mémoire.
+- Cap active leaderboard writer identities at 5,000 and temporarily refuse new ones beyond that limit to protect the server from memory exhaustion.
+
 ## 1.1.1 — 2026-11-07 — Sécurité / Security
 
 - Chargeur de traductions à chemins constants ; dictionnaires réseau sans prototype ; contrôle des ressources HTML avec HTMLParser.

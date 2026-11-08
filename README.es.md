@@ -44,7 +44,7 @@ El servidor escucha entonces en `127.0.0.1:8000`. Pon delante un **proxy HTTPS**
 ## Seguridad
 
 - **Sin cuenta ni datos personales**: cada navegador recibe un token aleatorio; en la clasificación solo aparece un identificador derivado.
-- **Límites en el servidor** (tamaño de los mensajes, ritmo por jugador, conexiones por dirección, partidas y jugadores), **consultas SQL parametrizadas**, **cabeceras de seguridad** (CSP estricta, sin iframe, `nosniff`).
+- **Límites en el servidor** (tamaño de los mensajes, ritmo por jugador, conexiones por dirección, partidas y jugadores); se siguen como máximo 5.000 identidades activas del ranking y las nuevas reciben HTTP 429 mientras se alcanza ese límite. También hay **consultas SQL parametrizadas** y **cabeceras de seguridad** (CSP estricta, sin iframe, `nosniff`).
 - **Texto de los demás jugadores neutralizado**: no se puede inyectar HTML en la página de otro jugador. Los mensajes compartidos viajan como plantillas que cada navegador traduce localmente.
 - **Imagen Docker reforzada**: usuario sin privilegios, sistema de archivos de solo lectura, sin capacidades Linux.
 
