@@ -1,143 +1,94 @@
-# Batailles de France
+<p align="center"><img src="app/static/icone.svg" width="112" alt=""></p>
 
-[English](README.md) · **Français** · [Español](README.es.md)
+<h1 align="center">Batailles de France</h1>
 
-**Un jeu de stratégie en temps réel dans le navigateur, sur les vraies cartes de cinq villes françaises.** Prends le quartier général adverse à Lyon, Paris, Marseille, Bordeaux ou Strasbourg : ponts, rives, collines, arrondissements, bâtiments, recherches, capacités, décisions politiques et imprévus propres à chaque ville.
+<p align="center"><b>Un jeu de stratégie en temps réel dans le navigateur, sur les cartes de Lyon, Paris, Marseille, Bordeaux et Strasbourg.</b></p>
 
-**8 langues** : français, anglais, espagnol, allemand, italien, portugais, chinois et japonais. La langue du navigateur est choisie automatiquement, un menu sur l'écran d'accueil permet d'en changer. En ligne, chaque joueur lit les messages de la partie dans sa propre langue.
+<p align="center"><img src="https://img.shields.io/badge/%F0%9F%8E%AE%20Music%20%26%20games-Browser-c2410c?style=flat-square" alt="Musique et jeux"> <a href="https://github.com/jeremdevgit/batailles-de-france/releases"><img src="https://img.shields.io/github/v/release/jeremdevgit/batailles-de-france?include_prereleases&style=flat-square&label=version" alt="version"></a> <a href="LICENSE"><img src="https://img.shields.io/badge/license-GPL--3.0--or--later-555?style=flat-square" alt="GPL-3.0-or-later"></a></p>
+
+<p align="center"><a href="README.md">English</a> · <b>Français</b> · <a href="README.es.md">Español</a> · <a href="README.de.md">Deutsch</a> · <a href="README.it.md">Italiano</a> · <a href="README.pt.md">Português</a> · <a href="README.zh.md">简体中文</a> · <a href="README.ja.md">日本語</a></p>
+
+<p align="center"><a href="https://github.com/jeremdevgit/batailles-de-france/releases/latest"><b>⬇ Télécharger</b></a></p>
 
 ![Une partie à Lyon](captures/partie-pc.png)
 
+Prenez le quartier général ennemi sur les **vraies cartes de Lyon, Paris, Marseille, Bordeaux et Strasbourg** : ponts, berges, collines, quartiers, bâtiments, recherches, capacités, décisions politiques et surprises propres à chaque ville.
+
+## En bref
+
+| | |
+|---|---|
+| **Catégorie** | 🎮 Musique et jeux |
+| **Plateformes** | Navigateur |
+| **Interface** | 8 langues (EN, FR, ES, DE, IT, PT, ZH, JA) |
+| **Prix** | Gratuit, open source, sans publicité ni télémétrie |
+| **État** | Stable |
+| **Licence** | [GPL-3.0-or-later](LICENSE) |
+
 ## Modes de jeu
 
-- **Solo** contre l'IA, seul ou en 2 contre 2 avec une IA alliée ; ta carrière progresse à chaque partie.
-- **Deux joueurs** sur le même ordinateur, chacun donnant ses ordres à son tour.
-- **En ligne** avec tes amis, en 1 contre 1 ou 2 contre 2, grâce à un code de partie à 5 caractères.
-- **Classé** : recherche automatique d'un adversaire, rangs de Recrue à Maréchal, classement des joueurs.
-- **Simulation** : deux IA s'affrontent, tu observes.
-- **Éditeur de cartes** pour créer et partager tes propres champs de bataille.
+- **Solo** contre l'IA, seul ou en 2 contre 2 avec une IA alliée ; votre carrière progresse à chaque partie.
+- **Deux joueurs** sur le même ordinateur, chacun son tour.
+- **En ligne** entre amis, en 1 contre 1 ou 2 contre 2, avec un code de partie de 5 caractères — chacun lit les messages dans sa langue.
+- **Classé** : appariement automatique, grades de Recrue à Maréchal, classement.
+- **Simulation** : regardez deux IA s'affronter.
+- **Éditeur de cartes** pour créer et partager vos champs de bataille.
 
 <p><img src="captures/accueil-pc.png" alt="Choix de la carte et du mode" width="62%"> <img src="captures/accueil-telephone.png" alt="Sur téléphone" width="18%"></p>
 
-<p><img src="captures/partie-telephone.jpg" alt="Une partie sur téléphone, en paysage" width="80%"></p>
+## Comment jouer
 
----
+**Tout de suite, hors ligne** — téléchargez `Batailles-de-France-hors-ligne.html` depuis la [dernière version](https://github.com/jeremdevgit/batailles-de-france/releases/latest) et ouvrez-le dans n'importe quel navigateur. Solo, deux joueurs, simulation et éditeur de cartes fonctionnent sans connexion. Vérification : `shasum -a 256 -c SHA256SUMS.txt --ignore-missing` ou `Get-FileHash`.
 
-## Jouer tout de suite (hors ligne)
+**En ligne et classé** demandent le serveur de jeu ci-dessous.
 
-Télécharge `Batailles-de-France-hors-ligne.html` dans la page [Releases](https://github.com/jeremdevgit/batailles-de-france/releases/latest) et ouvre-le dans ton navigateur. Tout fonctionne sans connexion : solo, deux joueurs, simulation et éditeur de cartes. Le jeu en ligne et le mode classé demandent le serveur de jeu (ci-dessous).
+## Héberger le serveur
 
-Pour vérifier le fichier : `shasum -a 256 -c SHA256SUMS.txt --ignore-missing` (macOS / Linux) ou `Get-FileHash` (Windows).
-
----
-
-## Héberger le jeu en ligne
-
-Le serveur (`app/main.py`, FastAPI) sert le jeu, relaie les messages des parties en ligne par WebSocket et tient le classement (SQLite). Il ne calcule rien : l'ordinateur de l'hôte simule la partie, les invités reçoivent l'état.
-
-### Avec Docker (recommandé)
+Le serveur FastAPI (`app/main.py`) sert le jeu, relaie les messages en ligne par WebSocket et tient le classement dans SQLite. C'est le navigateur de l'hôte qui simule la partie.
 
 ```sh
-docker compose up -d --build
+docker compose up -d --build     # écoute sur 127.0.0.1:8000
 ```
 
-Le serveur écoute alors sur `127.0.0.1:8000`. Place devant un **proxy HTTPS** qui transmet les WebSockets. Exemple avec Caddy :
+Placez devant un **proxy inverse HTTPS qui transmet les WebSockets** (Caddy : `reverse_proxy 127.0.0.1:8000` ; nginx : `proxy_http_version 1.1` et les en-têtes `Upgrade`/`Connection`).
 
-```caddy
-jeu.exemple.fr {
-	reverse_proxy 127.0.0.1:8000
-}
-```
-
-Exemple avec nginx :
-
-```nginx
-location / {
-    proxy_pass http://127.0.0.1:8000;
-    proxy_http_version 1.1;
-    proxy_set_header Upgrade $http_upgrade;
-    proxy_set_header Connection "upgrade";
-    proxy_set_header Host $host;
-    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-}
-```
-
-### Réglages (variables d'environnement)
-
-| Variable | Rôle | Défaut |
+| Variable | Rôle | Par défaut |
 |---|---|---|
-| `FORWARDED_ALLOW_IPS` | Adresse ou réseau du proxy autorisé à transmettre l'IP réelle des joueurs. **Ne jamais mettre `*`** si le port du serveur est joignable directement : un joueur pourrait usurper une adresse et contourner les limites. | `172.16.0.0/12` dans `docker-compose.yml` (proxy sur la machine, via la passerelle Docker) |
+| `FORWARDED_ALLOW_IPS` | Proxy autorisé à transmettre l'IP réelle des joueurs. **Jamais `*`** si le port est joignable directement | `172.16.0.0/12` (Docker) |
 | `BDF_DONNEES` | Dossier de la base du classement | `/donnees` |
 | `BDF_STATIQUE` | Dossier des fichiers du jeu | `/app/static` |
 
-### Sans Docker
+Sans Docker : `pip install -r requirements.txt`, puis depuis `app/`, `uvicorn main:app --host 127.0.0.1 --port 8000 --proxy-headers --no-server-header` avec `BDF_STATIQUE` et `BDF_DONNEES` définis.
+
+## Confidentialité et fair-play
+
+- **Ni compte, ni donnée personnelle** : un jeton aléatoire par navigateur ; seule une empreinte apparaît au classement.
+- Limites côté serveur sur la taille et le débit des messages, les connexions, les parties, les joueurs et les écritures au classement ; SQL paramétré ; CSP stricte et en-têtes de sécurité ; le texte des autres joueurs est neutralisé.
+- Image Docker durcie (sans privilèges, lecture seule, sans capacités), polices incluses.
+- Par conception, le classement se fie aux résultats envoyés par les navigateurs (contrôlés pour leur vraisemblance) et l'hôte fait foi en ligne.
+
+## Construire
 
 ```sh
-python3 -m venv .venv && . .venv/bin/activate
-pip install -r requirements.txt
-cd app && BDF_STATIQUE="$PWD/static" BDF_DONNEES="$PWD/../donnees" \
-  uvicorn main:app --host 127.0.0.1 --port 8000 --proxy-headers --no-server-header
+python3 construire.py     # Python 3.8+, sans dépendance → dist/Batailles-de-France-hors-ligne.html + SHA256SUMS.txt
 ```
 
-(Crée d'abord le dossier `donnees/`.)
-
----
-
-## Sécurité
-
-- **Aucun compte, aucune donnée personnelle** : chaque navigateur reçoit un jeton aléatoire ; seul un identifiant dérivé (empreinte) apparaît au classement.
-- **Limites côté serveur** : taille des messages, débit par joueur, connexions par adresse, nombre de parties et de joueurs par partie, écritures au classement par minute ; au plus 5 000 identités actives sont suivies, et les nouvelles reçoivent une réponse HTTP 429 tant que cette limite est atteinte.
-- **Requêtes SQL paramétrées**, entrées validées par des expressions strictes, documentation de l'API désactivée.
-- **En-têtes de sécurité** envoyés par le serveur lui-même : CSP stricte (`script-src 'self'`), interdiction d'affichage dans une iframe, `nosniff`, aucun referrer.
-- **Texte venant des autres joueurs neutralisé** (carte de l'hôte, pseudo, carte importée) : impossible d'injecter du HTML dans la page d'un autre joueur.
-- **Image Docker durcie** : utilisateur sans privilèges, système de fichiers en lecture seule, aucune capacité Linux, `no-new-privileges`, mémoire limitée.
-- **Polices embarquées** : aucune requête vers un service tiers.
-
-**Limites connues** (inhérentes à la conception, pas des failles) : le classement repose sur les résultats déclarés par les navigateurs (le serveur vérifie leur vraisemblance : une seule partie à la fois, au plus 100 points d'écart) ; en partie en ligne, l'ordinateur de l'hôte fait autorité.
-
-Une faille ? Merci de lire [SECURITY.md](SECURITY.md) avant d'ouvrir un ticket public.
-
----
-
-## Construire la version hors ligne
-
-```sh
-python3 construire.py
-```
-
-Crée `dist/Batailles-de-France-hors-ligne.html` (jeu, polices et icône dans un seul fichier, script autorisé par son empreinte SHA-256) et `dist/SHA256SUMS.txt`. Python 3.8 ou plus récent suffit, sans dépendance.
-
-## Structure du dépôt
-
-```
-app/main.py              serveur de jeu (FastAPI) : pages, relais WebSocket, classement
-app/static/              le jeu : index.html, jeu.js, reseau.js (client réseau), icône, polices
-app/static/textes/       traductions, une langue par fichier (le texte français sert de clé)
-Dockerfile, docker-compose.yml, requirements.txt
-construire.py            construction de la version hors ligne (dist/)
-captures/                captures d'écran
-licences-tiers/          licences des polices
-```
+Les traductions sont dans `app/static/textes/`, un fichier par langue, avec le texte français comme clé.
 
 ## Licence
 
-Code sous licence **GNU GPL v3 ou ultérieure** — voir [LICENSE](LICENSE). Copyright © 2026 jeremdevgit.
+GNU GPL v3 ou ultérieure — voir [LICENSE](LICENSE). Polices incluses [Barlow](https://github.com/jpt/barlow) et [Saira Condensed](https://github.com/Omnibus-Type/Saira) (OFL 1.1, [`licences-tiers/`](licences-tiers/)).
 
-Polices incluses, sous licence SIL Open Font License 1.1 (dossier [licences-tiers](licences-tiers/)) : [Barlow](https://github.com/jpt/barlow) et [Saira Condensed](https://github.com/Omnibus-Type/Saira).
+---
 
-## Mes autres logiciels
+Une faille de sécurité ? Signalez-la en privé (voir [SECURITY.md](SECURITY.md)) plutôt que dans un ticket public.
 
-Tous libres, gratuits et sans publicité — [github.com/jeremdevgit](https://github.com/jeremdevgit) :
+## Mes autres logiciels libres
 
-| Logiciel | Plateforme | En bref |
-|---|---|---|
-| [AutoDex](https://github.com/jeremdevgit/autodex) | Windows, macOS, Linux | Jeu de collection de voitures avec reconnaissance de photos sur l'appareil |
-| [Boîte à outils](https://github.com/jeremdevgit/boite-a-outils) | Windows, macOS | Entretien de l'ordinateur, nettoyage et recherche de fichiers |
-| [Carnet de notes](https://github.com/jeremdevgit/carnet-rust) | Windows | Carnets chiffrés et synchronisation expérimentale |
-| [Decklight](https://github.com/jeremdevgit/decklight) | Windows, macOS, Linux | Stream Deck virtuel avec contrôle USB |
-| [JMeca](https://github.com/jeremdevgit/jmeca) | Windows, macOS, Linux | Suivi d'entretien de véhicules chiffré |
-| [LJ Hub](https://github.com/jeremdevgit/lj-hub) | Windows, macOS, Linux | Gestionnaire de profils pour appareils Logitech |
-| [Pomme](https://github.com/jeremdevgit/pomme) | Windows | Lecteur de musique Apple Music et fichiers locaux |
-| [rJb](https://github.com/jeremdevgit/rjb) | Windows | Contrôle de l'éclairage RGB |
-| [Ludothèque](https://github.com/jeremdevgit/ludotheque) | macOS | Bibliothèque et lanceur de jeux |
-| [Suite Libre](https://jeremdevgit.github.io/suite-libre/) | Navigateur | Six outils sans compte |
+Tous gratuits, open source et sans publicité.
+
+**🛠️ Système et matériel** — [Boîte à outils](https://github.com/jeremdevgit/boite-a-outils) · [rJb](https://github.com/jeremdevgit/rjb) · [LJ Hub](https://github.com/jeremdevgit/lj-hub) · [Decklight](https://github.com/jeremdevgit/decklight)
+
+**📒 Productivité et données** — [Carnet de notes](https://github.com/jeremdevgit/carnet-rust) · [JMeca](https://github.com/jeremdevgit/jmeca) · [Suite Libre](https://jeremdevgit.github.io/suite-libre/)
+
+**🎮 Musique et jeux** — [Pomme](https://github.com/jeremdevgit/pomme) · [Ludothèque](https://github.com/jeremdevgit/ludotheque) · [AutoDex](https://github.com/jeremdevgit/autodex)
